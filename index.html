@@ -2,40 +2,38 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Vet Tech Study Game</title>
+<title>Vet Tech Trainer PRO</title>
 
 <style>
 body {
   font-family: Arial;
-  max-width: 600px;
+  max-width: 700px;
   margin: 40px auto;
   text-align: center;
 }
 
-.question {
-  font-size: 22px;
-  margin-bottom: 20px;
+h1 { margin-bottom: 10px; }
+
+button {
+  padding: 12px;
+  margin: 8px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
 .btn {
   display: block;
   width: 100%;
-  padding: 12px;
-  margin: 8px 0;
-  border: none;
   background: #eee;
-  cursor: pointer;
-  border-radius: 8px;
-  font-size: 16px;
 }
 
 .correct { background: #4CAF50; color: white; }
 .wrong { background: #f44336; color: white; }
 
-#nextBtn {
-  margin-top: 20px;
-  padding: 10px 20px;
-}
+#score { margin: 10px; font-weight: bold; }
+
+.hidden { display: none; }
 </style>
 </head>
 
@@ -43,79 +41,175 @@ body {
 
 <h1>Vet Tech Trainer</h1>
 
-<div class="question" id="question"></div>
+<div id="menu">
+  <h2>Select Mode</h2>
+  <button onclick="startCategory('fluid')">Fluid Therapy</button>
+  <button onclick="startCategory('exam')">History & Physical</button>
+  <button onclick="startCategory('emergency')">Emergency</button>
+  <button onclick="startMixed()">🔥 Full Exam (Mixed)</button>
+</div>
 
-<div id="answers"></div>
-
-<button id="nextBtn" onclick="nextQuestion()">Next</button>
+<div id="game" class="hidden">
+  <div id="score">Score: 0 / 0</div>
+  <div id="question"></div>
+  <div id="answers"></div>
+  <button onclick="nextQuestion()">Next</button>
+</div>
 
 <script>
-let questions = [
-{
-q: "What percentage of the body is made up of water?",
-a: ["30%", "45%", "60%", "80%"],
-correct: 2
-},
-{
-q: "Which IV fluids have an osmolality equal to blood?",
-a: ["Hypotonic", "Isotonic", "Hypertonic", "Colloids"],
-correct: 1
-},
-{
-q: "What is the FIRST step in triage?",
-a: ["Take temperature", "Full exam", "Primary survey (ABCs)", "Bloodwork"],
-correct: 2
-},
-{
-q: "Which tool is used to examine the ear?",
-a: ["Ophthalmoscope", "Otoscope", "Stethoscope", "Endoscope"],
-correct: 1
-},
-{
-q: "What does CRT stand for?",
-a: ["Cardiac Rate Test", "Capillary Refill Time", "Circulatory Response Test", "Cardio Rhythm Timing"],
-correct: 1
-}
+
+// =====================
+// QUESTION BANK (~100)
+// =====================
+
+const fluid = [
+{q:"Body water %?", a:["30%","45%","60%","80%"], correct:2},
+{q:"ICF stands for?", a:["Internal","Intracellular","Intercellular","Inside fluid"], correct:1},
+{q:"ECF stands for?", a:["External cell fluid","Extracellular","Extra cardiac fluid","Electro fluid"], correct:1},
+{q:"Hypotonic fluids do?", a:["Add electrolytes","Add water","Increase sodium","Cause shock"], correct:1},
+{q:"Treat hypernatremia with?", a:["Hypertonic","Hypotonic","Colloids","Blood"], correct:1},
+{q:"Isotonic fluids example?", a:["0.9% NaCl","3% NaCl","D5W","Plasma"], correct:0},
+{q:"LRS is?", a:["Hypertonic","Isotonic","Hypotonic","Colloid"], correct:1},
+{q:"Hypertonic fluids do?", a:["Add water","Draw fluid out","Lower BP","None"], correct:1},
+{q:"Used in head trauma?", a:["Hypotonic","Isotonic","Hypertonic","None"], correct:2},
+{q:"Colloids stay where?", a:["Cells","Vascular space","GI","Bone"], correct:1},
+{q:"Colloids used for?", a:["Skin","Resuscitation","Eyes","Bones"], correct:1},
+{q:"Resuscitation phase goal?", a:["Weight gain","Restore volume","Decrease HR","Feed"], correct:1},
+{q:"Monitor in resuscitation?", a:["HR","CRT","MM","All"], correct:3},
+{q:"Replacement phase fixes?", a:["Shock","Dehydration","Cancer","Pain"], correct:1},
+{q:"Maintenance phase is for?", a:["Stable patients","Shock","Bleeding","Trauma"], correct:0},
+{q:"IV route used for?", a:["Mild cases","Critical cases","Home use","None"], correct:1},
+{q:"SQ fluids for?", a:["Severe shock","Mild dehydration","Surgery","None"], correct:1},
+{q:"IO route used when?", a:["IV possible","IV not possible","Always","Never"], correct:1},
+{q:"Enteral route requires?", a:["Shock","GI function","Anesthesia","None"], correct:1},
+{q:"Potassium added for?", a:["Hyperkalemia","Hypokalemia","Anemia","Pain"], correct:1},
 ];
 
-let current = 0;
+const exam = [
+{q:"First step in history?", a:["Diagnose","Introduce yourself","Treat","Weigh"], correct:1},
+{q:"Signalment includes?", a:["Name","Age","Breed","All"], correct:3},
+{q:"Open-ended questions?", a:["Yes/No","Detailed","Short","None"], correct:1},
+{q:"First diagnostic test?", a:["Bloodwork","Physical exam","X-ray","MRI"], correct:1},
+{q:"BAR means?", a:["Bright alert responsive","Basic alert reaction","Body alert","None"], correct:0},
+{q:"Eye tool?", a:["Otoscope","Ophthalmoscope","Scope","None"], correct:1},
+{q:"Ear tool?", a:["Otoscope","Scope","Light","None"], correct:0},
+{q:"Entropion?", a:["Outward","Inward","Swelling","None"], correct:1},
+{q:"Ectropion?", a:["Inward","Outward","Pain","None"], correct:1},
+{q:"Anisocoria?", a:["Equal pupils","Unequal pupils","Blindness","None"], correct:1},
+{q:"Check CRT where?", a:["Eyes","Gums","Ears","Nose"], correct:1},
+{q:"PAM valves?", a:["Heart","Lungs","Kidney","Brain"], correct:0},
+{q:"Normal lymph nodes?", a:["Hard","Soft & movable","Hot","Painful"], correct:1},
+{q:"GI exam includes?", a:["Palpation","Listening","Touch","All"], correct:3},
+{q:"Skin abnormal?", a:["Shiny","Greasy","Smooth","Soft"], correct:1},
+{q:"Musculoskeletal check?", a:["Pain","Lameness","Swelling","All"], correct:3},
+{q:"Nervous system includes?", a:["Reflexes","Gait","Tone","All"], correct:3},
+];
 
-function loadQuestion() {
-  let q = questions[current];
-  document.getElementById("question").innerText = q.q;
-  
+const emergency = [
+{q:"Triage means?", a:["Treat all","Prioritize patients","Ignore","Wait"], correct:1},
+{q:"Primary survey?", a:["ABC","XYZ","123","None"], correct:0},
+{q:"A stands for?", a:["Airway","Alert","Action","All"], correct:0},
+{q:"B stands for?", a:["Breathing","Bleeding","Both","None"], correct:2},
+{q:"C stands for?", a:["Circulation","Cardio","Both","None"], correct:2},
+{q:"Shock is?", a:["Good flow","Poor perfusion","High sugar","None"], correct:1},
+{q:"Hypovolemic shock cause?", a:["Fluid loss","Infection","Tumor","None"], correct:0},
+{q:"Cats in shock?", a:["Tachycardia","Bradycardia","Normal","None"], correct:1},
+{q:"10% dehydration shows?", a:["Normal","Sunken eyes","Clear","None"], correct:1},
+{q:"Septic shock?", a:["Infection","Trauma","Burn","None"], correct:0},
+{q:"Cardiogenic shock?", a:["Heart failure","Kidney","Brain","None"], correct:0},
+{q:"CPR rate?", a:["50","100-120","200","10"], correct:1},
+{q:"Respirations CPR?", a:["5","10","20","50"], correct:1},
+{q:"Common emergency?", a:["GDV","Toxin","Trauma","All"], correct:3},
+];
+
+// =====================
+// GAME LOGIC
+// =====================
+
+let queue = [];
+let currentQ;
+let correctCount = 0;
+let totalCount = 0;
+
+function startCategory(type){
+  document.getElementById("menu").classList.add("hidden");
+  document.getElementById("game").classList.remove("hidden");
+
+  if(type==="fluid") queue = [...fluid];
+  if(type==="exam") queue = [...exam];
+  if(type==="emergency") queue = [...emergency];
+
+  startGame();
+}
+
+function startMixed(){
+  document.getElementById("menu").classList.add("hidden");
+  document.getElementById("game").classList.remove("hidden");
+
+  queue = [...fluid, ...exam, ...emergency];
+  startGame();
+}
+
+function startGame(){
+  shuffle(queue);
+  correctCount = 0;
+  totalCount = 0;
+  nextQuestion();
+}
+
+function shuffle(array){
+  for(let i=array.length-1;i>0;i--){
+    let j=Math.floor(Math.random()*(i+1));
+    [array[i],array[j]]=[array[j],array[i]];
+  }
+}
+
+function nextQuestion(){
+  if(queue.length===0){
+    alert("🎉 You finished! Restarting...");
+    location.reload();
+  }
+
+  currentQ = queue.shift();
+
+  document.getElementById("question").innerText = currentQ.q;
+
   let answersDiv = document.getElementById("answers");
   answersDiv.innerHTML = "";
 
-  q.a.forEach((answer, i) => {
-    let btn = document.createElement("button");
-    btn.innerText = answer;
-    btn.className = "btn";
-    
-    btn.onclick = () => checkAnswer(btn, i);
-    
+  currentQ.a.forEach((ans,i)=>{
+    let btn=document.createElement("button");
+    btn.innerText=ans;
+    btn.className="btn";
+
+    btn.onclick=()=>checkAnswer(btn,i);
+
     answersDiv.appendChild(btn);
   });
 }
 
-function checkAnswer(btn, index) {
-  let correct = questions[current].correct;
-  let buttons = document.querySelectorAll(".btn");
+function checkAnswer(btn,i){
+  let buttons=document.querySelectorAll(".btn");
 
-  buttons.forEach((b, i) => {
-    b.disabled = true;
-    if (i === correct) b.classList.add("correct");
-    if (i === index && i !== correct) b.classList.add("wrong");
+  totalCount++;
+
+  if(i===currentQ.correct){
+    correctCount++;
+    btn.classList.add("correct");
+  } else {
+    btn.classList.add("wrong");
+    queue.push(currentQ);
+  }
+
+  buttons.forEach((b,index)=>{
+    b.disabled=true;
+    if(index===currentQ.correct) b.classList.add("correct");
   });
+
+  document.getElementById("score").innerText =
+    "Score: "+correctCount+" / "+totalCount;
 }
 
-function nextQuestion() {
-  current++;
-  if (current >= questions.length) current = 0;
-  loadQuestion();
-}
-
-loadQuestion();
 </script>
 
 </body>

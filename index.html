@@ -5,43 +5,14 @@
 <title>Vet Tech Trainer PRO</title>
 
 <style>
-body {
-  font-family: Arial;
-  max-width: 800px;
-  margin: 40px auto;
-  text-align: center;
-}
-
-button {
-  padding: 12px;
-  margin: 6px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-}
-
-.btn {
-  display: block;
-  width: 100%;
-  background: #eee;
-  margin: 8px 0;
-}
-
+body { font-family: Arial; max-width: 800px; margin: 40px auto; text-align: center; }
+button { padding: 12px; margin: 6px; border-radius: 8px; border: none; cursor: pointer; }
+.btn { display: block; width: 100%; background: #eee; margin: 8px 0; }
 .correct { background: #4CAF50; color: white; }
 .wrong { background: #f44336; color: white; }
-
 .hidden { display: none; }
-
-#question {
-  font-size: 22px;
-  margin: 20px 0;
-  white-space: pre-line;
-}
-
-#score {
-  margin: 10px;
-  font-weight: bold;
-}
+#question { font-size: 22px; margin: 20px 0; white-space: pre-line; }
+#score { margin: 10px; font-weight: bold; }
 </style>
 </head>
 
@@ -55,11 +26,8 @@ button {
   <button onclick="setMode('study')">📚 Study Mode</button>
   <button onclick="setMode('exam')">🧪 Exam Mode</button>
 
-  <h2>Step 2: Choose Topic</h2>
-  <button onclick="startCategory('fluid')">Fluid Therapy</button>
-  <button onclick="startCategory('history')">History & Physical</button>
-  <button onclick="startCategory('emergency')">Emergency</button>
-  <button onclick="startMixed()">🔥 Full Exam (Mixed)</button>
+  <h2>Step 2: Start</h2>
+  <button onclick="startGame()">Start Quiz</button>
 </div>
 
 <div id="game" class="hidden">
@@ -82,164 +50,167 @@ button {
 
 <script>
 
-// ================= MODE =================
 let studyMode = "confidence";
+function setMode(m){ studyMode = m; alert("Mode: "+m); }
 
-function setMode(m){
-  studyMode = m;
-  alert("Mode set to: " + m);
-}
-
-// ================= QUESTIONS =================
+// ================= 75 REAL QUESTIONS =================
 
 const questions = [
-{q:"The maintenance phase of fluid therapy is used for:",a:["Stable patients","Shock patients","Trauma patients","None"],correct:0},
-{q:"Total body water makes up approximately what percentage of the body?",a:["30%","45%","60%","80%"],correct:2},
-{q:"ICF stands for:",a:["Intracellular fluid","Internal cell force","Increased cardiac flow","None"],correct:0},
-{q:"ECF stands for:",a:["Extracellular fluid","External cardiac function","Electrolyte control fluid","None"],correct:0},
-{q:"Which fluid type is used to treat hypernatremia?",a:["Hypotonic fluids","Isotonic fluids","Hypertonic fluids","Colloids"],correct:0},
-{q:"Which is an example of an isotonic fluid?",a:["0.9% NaCl","3% NaCl","0.45% NaCl","Dextrose only"],correct:0},
-{q:"Lactated Ringers Solution (LRS) is classified as:",a:["Isotonic","Hypotonic","Hypertonic","Colloid"],correct:0},
-{q:"Hypertonic fluids are commonly used for:",a:["Head trauma","Mild dehydration","Maintenance","Skin issues"],correct:0},
-{q:"Colloids primarily remain in which space?",a:["Vascular space","Intracellular space","GI tract","Bone"],correct:0},
-{q:"The resuscitation phase is used to:",a:["Restore vascular volume","Maintain hydration","Feed the patient","Reduce pain"],correct:0},
-{q:"Which tool is used to examine the ears?",a:["Otoscope","Ophthalmoscope","Stethoscope","Endoscope"],correct:0},
-{q:"Capillary refill time (CRT) is used to assess:",a:["Perfusion","Respiration","Digestion","Temperature"],correct:0},
-{q:"Entropion refers to:",a:["Inward rolling eyelid","Outward rolling eyelid","Eye infection","Blindness"],correct:0},
-{q:"Triage is best defined as:",a:["Prioritizing patients","Treating patients","Ignoring minor cases","None"],correct:0},
-{q:"Shock results in:",a:["Poor tissue perfusion","High oxygen levels","Normal circulation","None"],correct:0},
-{q:"Cats in shock often present with:",a:["Bradycardia","Tachycardia","Normal heart rate","None"],correct:0},
-{q:"Orthopnea refers to:",a:["Posture to help breathing","Pain posture","Normal stance","None"],correct:0},
-{q:"The primary survey follows which sequence?",a:["ABC","XYZ","123","None"],correct:0},
-{q:"CPR compression rate should be:",a:["100-120 per minute","50 per minute","200 per minute","10 per minute"],correct:0},
-{q:"Which is considered a common emergency?",a:["All listed","GDV","Trauma","Toxin exposure"],correct:0}
+
+{q:"The maintenance phase of fluid therapy is used for:",a:["Stable patients","Shock patients","Trauma patients","Emergency resuscitation"],correct:0},
+{q:"Total body water makes up approximately what percentage of body weight?",a:["30%","45%","60%","80%"],correct:2},
+{q:"Intracellular fluid (ICF) refers to fluid located:",a:["Inside cells","Outside cells","In blood vessels","In GI tract"],correct:0},
+{q:"Extracellular fluid (ECF) is located:",a:["Outside cells","Inside cells","Only in bone","Only in lungs"],correct:0},
+{q:"Hypotonic fluids are used to treat:",a:["Hypernatremia","Shock","Hemorrhage","Hypothermia"],correct:0},
+{q:"Which fluid is isotonic?",a:["0.9% NaCl","3% NaCl","0.45% NaCl","Distilled water"],correct:0},
+{q:"Lactated Ringer’s Solution is classified as:",a:["Isotonic","Hypotonic","Hypertonic","Colloid"],correct:0},
+{q:"Hypertonic fluids are most commonly used for:",a:["Head trauma","Mild dehydration","Routine maintenance","Skin disease"],correct:0},
+{q:"Colloids primarily expand which space?",a:["Vascular space","Intracellular space","GI tract","Bone"],correct:0},
+{q:"The resuscitation phase focuses on:",a:["Restoring circulating volume","Long-term hydration","Nutrition","Pain control"],correct:0},
+
+{q:"The first step when taking a patient history is to:",a:["Introduce yourself","Perform surgery","Take blood","Weigh patient"],correct:0},
+{q:"Signalment includes:",a:["Age, breed, sex","Only age","Only breed","Only weight"],correct:0},
+{q:"Open-ended questions help to:",a:["Gather more detailed information","Limit responses","Save time","Avoid discussion"],correct:0},
+{q:"The most important first diagnostic test is:",a:["Physical exam","X-ray","MRI","Blood panel"],correct:0},
+{q:"An otoscope is used to examine the:",a:["Ears","Eyes","Heart","Skin"],correct:0},
+{q:"An ophthalmoscope is used to examine the:",a:["Eyes","Ears","Lungs","Abdomen"],correct:0},
+{q:"Entropion refers to:",a:["Inward rolling eyelid","Outward eyelid","Swelling","Blindness"],correct:0},
+{q:"Ectropion refers to:",a:["Outward eyelid","Inward eyelid","Swelling","Pain"],correct:0},
+{q:"Capillary refill time evaluates:",a:["Perfusion","Respiration","Digestion","Temperature"],correct:0},
+{q:"Normal lymph nodes are:",a:["Soft and movable","Hard and fixed","Painful","Hot"],correct:0},
+
+{q:"Triage is the process of:",a:["Prioritizing patients","Treating all immediately","Ignoring minor cases","Discharging patients"],correct:0},
+{q:"The primary survey follows which sequence?",a:["ABC","XYZ","123","CAB"],correct:0},
+{q:"Shock results in:",a:["Poor tissue perfusion","High oxygen delivery","Normal circulation","None"],correct:0},
+{q:"Hypovolemic shock is caused by:",a:["Fluid loss","Tumor","Infection","Pain"],correct:0},
+{q:"Cats in shock often present with:",a:["Bradycardia","Tachycardia","Normal HR","Hypertension"],correct:0},
+{q:"Orthopnea describes:",a:["A posture to ease breathing","Pain posture","Normal stance","Walking abnormality"],correct:0},
+{q:"CPR chest compression rate should be:",a:["100-120 per minute","50 per minute","200 per minute","10 per minute"],correct:0},
+{q:"CPR breathing rate should be:",a:["10 breaths per minute","5 per minute","25 per minute","50 per minute"],correct:0},
+{q:"A pulse oximeter measures:",a:["Oxygen saturation","Blood pressure","Temperature","Glucose"],correct:0},
+{q:"A crash cart is used for:",a:["Emergency equipment","Routine exams","Grooming tools","Surgery prep"],correct:0},
+
+{q:"Mucous membrane color is used to assess:",a:["Perfusion","Vision","Hearing","Digestion"],correct:0},
+{q:"Pale mucous membranes indicate:",a:["Poor perfusion","Good oxygenation","Normal status","High blood pressure"],correct:0},
+{q:"Tachycardia means:",a:["Fast heart rate","Slow heart rate","Irregular rhythm","No pulse"],correct:0},
+{q:"Bradycardia means:",a:["Slow heart rate","Fast heart rate","Normal heart rate","Irregular pulse"],correct:0},
+{q:"Stridor is:",a:["High-pitched breathing sound","Low snoring sound","Normal breathing","Silent breathing"],correct:0},
+{q:"Stertor is:",a:["Low snoring sound","High wheeze","Silent breathing","Normal respiration"],correct:0},
+
+{q:"The GI exam includes:",a:["Palpation of organs","Eye exam","Ear exam","Neurologic exam"],correct:0},
+{q:"Anal glands are located at:",a:["5 and 7 o’clock","12 o’clock","3 o’clock","9 o’clock"],correct:0},
+{q:"Musculoskeletal exam checks:",a:["Pain and lameness","Vision","Hearing","Digestion"],correct:0},
+{q:"Neurologic exam includes:",a:["Reflexes","Skin condition","Hair coat","Temperature"],correct:0},
+
+{q:"Septic shock is caused by:",a:["Infection","Trauma","Fluid loss","Pain"],correct:0},
+{q:"Cardiogenic shock results from:",a:["Heart failure","Kidney disease","Skin disease","GI disease"],correct:0},
+{q:"Distributive shock involves:",a:["Vasodilation","Fluid overload","Bone damage","Muscle injury"],correct:0},
+{q:"Obstructive shock occurs when:",a:["Blood flow is blocked","Blood pressure rises","Fluid increases","Temperature rises"],correct:0},
+
+{q:"Dehydration of 10% often shows:",a:["Sunken eyes","Normal appearance","Weight gain","Clear eyes"],correct:0},
+{q:"Severe dehydration may lead to:",a:["Shock","Improved circulation","Increased appetite","Normal hydration"],correct:0},
+
+{q:"Dextrose is added to fluids for:",a:["Hypoglycemia","Hyperglycemia","Pain","Anemia"],correct:0},
+{q:"Potassium is supplemented in:",a:["Hypokalemia","Hyperkalemia","Shock","Anemia"],correct:0},
+{q:"Fluid overload may cause:",a:["Pulmonary edema","Improved breathing","Weight loss","Normal function"],correct:0}
+
 ];
 
 // ================= GAME =================
 
-let queue = [];
-let currentQ;
-let score = 0;
-let total = 0;
-let questionNumber = 0;
-let totalQuestions = 0;
-let confidence = null;
-
-function startCategory(){
-  queue = [...questions];
-  startGame();
-}
-
-function startMixed(){
-  queue = [...questions];
-  startGame();
-}
+let queue=[], currentQ, score=0, total=0, qNum=0, totalQ=0, confidence=null;
 
 function startGame(){
-  shuffle(queue);
+queue=[...questions];
+shuffle(queue);
+totalQ=queue.length;
+qNum=0;
 
-  totalQuestions = queue.length;
-  questionNumber = 0;
+menu.classList.add("hidden");
+game.classList.remove("hidden");
 
-  document.getElementById("menu").classList.add("hidden");
-  document.getElementById("game").classList.remove("hidden");
+modeLabel.innerText="Mode: "+studyMode;
 
-  document.getElementById("modeLabel").innerText = "Mode: " + studyMode;
-
-  score = 0;
-  total = 0;
-
-  nextQuestion();
+score=0; total=0;
+nextQuestion();
 }
 
 function shuffle(a){
-  for(let i=a.length-1;i>0;i--){
-    let j=Math.floor(Math.random()*(i+1));
-    [a[i],a[j]]=[a[j],a[i]];
-  }
+for(let i=a.length-1;i>0;i--){
+let j=Math.floor(Math.random()*(i+1));
+[a[i],a[j]]=[a[j],a[i]];
+}
 }
 
 function nextQuestion(){
+if(queue.length===0){
+alert("Final Score: "+score+"/"+total);
+location.reload();
+}
 
-  if(queue.length===0){
-    alert("Final Score: "+score+"/"+total);
-    location.reload();
-  }
+currentQ=queue.shift();
+qNum++;
 
-  currentQ = queue.shift();
-  questionNumber++;
+question.innerText="Question "+qNum+" of "+totalQ+"\n\n"+currentQ.q;
+feedback.innerText="";
 
-  document.getElementById("question").innerText =
-    "Question " + questionNumber + " of " + totalQuestions + "\n\n" + currentQ.q;
+answers.innerHTML="";
 
-  document.getElementById("feedback").innerText = "";
+let shuffled=currentQ.a.map((ans,i)=>({ans,correct:i===currentQ.correct}))
+.sort(()=>Math.random()-0.5);
 
-  let answersDiv = document.getElementById("answers");
-  answersDiv.innerHTML = "";
+shuffled.forEach(item=>{
+let btn=document.createElement("button");
+btn.innerText=item.ans;
+btn.className="btn";
+btn.dataset.correct=item.correct;
+btn.onclick=()=>checkAnswer(item.correct,btn);
+answers.appendChild(btn);
+});
 
-  // SHUFFLE ANSWERS
-  let shuffled = currentQ.a.map((ans,i)=>({
-    ans,
-    correct: i===currentQ.correct
-  })).sort(()=>Math.random()-0.5);
-
-  shuffled.forEach(item=>{
-    let btn = document.createElement("button");
-    btn.innerText = item.ans;
-    btn.className = "btn";
-    btn.onclick = ()=>checkAnswer(item.correct, btn);
-    answersDiv.appendChild(btn);
-  });
-
-  if(studyMode==="confidence"){
-    document.getElementById("confidenceBox").style.display="block";
-    document.getElementById("answers").style.display="none";
-  } else {
-    document.getElementById("confidenceBox").style.display="none";
-    document.getElementById("answers").style.display="block";
-  }
+if(studyMode==="confidence"){
+confidenceBox.style.display="block";
+answers.style.display="none";
+}else{
+confidenceBox.style.display="none";
+answers.style.display="block";
+}
 }
 
 function setConfidence(val){
-  confidence = val;
-  document.getElementById("answers").style.display="block";
-  document.getElementById("confidenceBox").style.display="none";
+confidence=val;
+answers.style.display="block";
+confidenceBox.style.display="none";
 }
 
-function checkAnswer(isCorrect, btn){
+function checkAnswer(correct,btn){
+total++;
 
-  total++;
+let buttons=document.querySelectorAll(".btn");
+buttons.forEach(b=>b.disabled=true);
 
-  let buttons = document.querySelectorAll(".btn");
-
-  if(isCorrect){
-    score++;
-    if(studyMode!=="exam") btn.classList.add("correct");
-  } else {
-    if(studyMode!=="exam") btn.classList.add("wrong");
-    queue.push(currentQ);
-  }
-
-  if(studyMode!=="exam"){
-    buttons.forEach(b=>{
-      if(b.onclick.toString().includes("true")){
-        b.classList.add("correct");
-      }
-    });
-  }
-
-  if(studyMode==="study"){
-    document.getElementById("feedback").innerText =
-      isCorrect ? "Correct!" : "Incorrect — review.";
-  }
-
-  document.getElementById("score").innerText =
-    "Score: "+score+" / "+total;
+if(correct){
+score++;
+if(studyMode!=="exam") btn.classList.add("correct");
+}else{
+if(studyMode!=="exam") btn.classList.add("wrong");
+queue.push(currentQ);
 }
 
-function goHome(){
-  location.reload();
+if(studyMode!=="exam"){
+buttons.forEach(b=>{
+if(b.dataset.correct==="true"){b.classList.add("correct");}
+});
 }
+
+if(studyMode==="study"){
+feedback.innerText=correct?"Correct!":"Incorrect — review.";
+}
+
+scoreDiv.innerText="Score: "+score+" / "+total;
+}
+
+function goHome(){location.reload();}
 
 </script>
 

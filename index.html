@@ -13,6 +13,10 @@ button { padding: 12px; margin: 6px; border-radius: 10px; border: none; cursor: 
 .hidden { display: none; }
 #question { font-size: 22px; margin: 20px 0; white-space: pre-line; }
 #score { margin: 10px; font-weight: bold; }
+
+#results {
+  padding: 20px;
+}
 </style>
 </head>
 
@@ -21,7 +25,6 @@ button { padding: 12px; margin: 6px; border-radius: 10px; border: none; cursor: 
 <h1>Vet Tech Trainer</h1>
 
 <div id="menu">
-
   <h2>Step 1: Choose Mode</h2>
   <button onclick="setMode('confidence')">🧠 Confidence</button>
   <button onclick="setMode('study')">📚 Study</button>
@@ -32,7 +35,6 @@ button { padding: 12px; margin: 6px; border-radius: 10px; border: none; cursor: 
   <button onclick="startCategory('history')">History & Physical</button>
   <button onclick="startCategory('emergency')">Emergency</button>
   <button onclick="startMixed()">🔥 Full Exam</button>
-
 </div>
 
 <div id="game" class="hidden">
@@ -53,100 +55,24 @@ button { padding: 12px; margin: 6px; border-radius: 10px; border: none; cursor: 
   <button onclick="goHome()">🏠 Home</button>
 </div>
 
+<!-- RESULTS SCREEN -->
+<div id="results" class="hidden">
+  <h2>Exam Results</h2>
+  <h3 id="finalScore"></h3>
+  <h3 id="percentage"></h3>
+  <h3 id="passFail"></h3>
+
+  <button onclick="goHome()">🏠 Back to Home</button>
+</div>
+
 <script>
 
-// ================= MODE =================
+// MODE
 let studyMode = "confidence";
 function setMode(m){ studyMode = m; alert("Mode: "+m); }
 
-// ================= QUESTION BANK =================
-
-// FLUID (25)
-const fluid = [
-{q:"The maintenance phase of fluid therapy is used for:",a:["Stable patients","Shock patients","Trauma patients","Emergency resuscitation"],correct:0},
-{q:"Total body water makes up approximately what percentage?",a:["30%","45%","60%","80%"],correct:2},
-{q:"Intracellular fluid (ICF) refers to fluid located:",a:["Inside cells","Outside cells","In blood vessels","GI tract"],correct:0},
-{q:"Extracellular fluid (ECF) is located:",a:["Outside cells","Inside cells","Only bone","Only lungs"],correct:0},
-{q:"Hypotonic fluids treat:",a:["Hypernatremia","Shock","Hemorrhage","Pain"],correct:0},
-{q:"Which is isotonic?",a:["0.9% NaCl","3% NaCl","0.45% NaCl","Distilled water"],correct:0},
-{q:"LRS is:",a:["Isotonic","Hypotonic","Hypertonic","Colloid"],correct:0},
-{q:"Hypertonic fluids are used for:",a:["Head trauma","Mild dehydration","Maintenance","Skin issues"],correct:0},
-{q:"Colloids expand:",a:["Vascular space","Cells","GI","Bone"],correct:0},
-{q:"Resuscitation phase goal:",a:["Restore volume","Feed","Pain control","None"],correct:0},
-{q:"Replacement phase corrects:",a:["Dehydration","Pain","Infection","Temperature"],correct:0},
-{q:"Maintenance phase supports:",a:["Normal hydration","Shock","Trauma","Blood loss"],correct:0},
-{q:"IV fluids are used for:",a:["Critical patients","Mild dehydration","Skin issues","Behavior"],correct:0},
-{q:"SQ fluids are used for:",a:["Mild dehydration","Shock","CPR","Trauma"],correct:0},
-{q:"Enteral fluids require:",a:["Working GI tract","Shock","Trauma","None"],correct:0},
-{q:"Dextrose treats:",a:["Hypoglycemia","Hyperglycemia","Shock","Pain"],correct:0},
-{q:"Potassium treats:",a:["Hypokalemia","Hyperkalemia","Anemia","Pain"],correct:0},
-{q:"Fluid overload can cause:",a:["Pulmonary edema","Better breathing","Weight loss","None"],correct:0},
-{q:"Isotonic fluids distribute where?",a:["ECF","ICF","Bone","Cells only"],correct:0},
-{q:"Hypotonic fluids move water:",a:["Into cells","Out of cells","Nowhere","Bone"],correct:0},
-{q:"Hypertonic fluids pull water:",a:["Out of cells","Into cells","None","Bone"],correct:0},
-{q:"Colloids contain:",a:["Large molecules","Electrolytes only","Water only","None"],correct:0},
-{q:"Primary risk of fluids:",a:["Overload","Pain","Hair loss","None"],correct:0},
-{q:"Maintenance fluid rate is for:",a:["Stable patients","Shock","CPR","Bleeding"],correct:0},
-{q:"Fluid therapy goal:",a:["Restore balance","Cause dehydration","None","Weight loss"],correct:0}
-];
-
-// HISTORY (25)
-const history = [
-{q:"First step in history:",a:["Introduce yourself","Treat","Weigh","Ignore"],correct:0},
-{q:"Signalment includes:",a:["Age, breed, sex","Only age","Only weight","Only name"],correct:0},
-{q:"Open-ended questions:",a:["Encourage detail","Limit answers","Confuse","None"],correct:0},
-{q:"First diagnostic:",a:["Physical exam","X-ray","MRI","Blood"],correct:0},
-{q:"Otoscope examines:",a:["Ears","Eyes","Heart","Skin"],correct:0},
-{q:"Ophthalmoscope examines:",a:["Eyes","Ears","Skin","Bone"],correct:0},
-{q:"Entropion:",a:["Inward eyelid","Outward","Swelling","None"],correct:0},
-{q:"Ectropion:",a:["Outward eyelid","Inward","Swelling","None"],correct:0},
-{q:"CRT assesses:",a:["Perfusion","Respiration","Digestion","Temp"],correct:0},
-{q:"Normal lymph nodes:",a:["Soft & movable","Hard","Hot","Painful"],correct:0},
-{q:"Stertor:",a:["Low snoring sound","High wheeze","None","Normal"],correct:0},
-{q:"Stridor:",a:["High wheeze","Low sound","None","Normal"],correct:0},
-{q:"Mucous membranes assess:",a:["Perfusion","Vision","Hearing","Skin"],correct:0},
-{q:"Pale gums indicate:",a:["Poor perfusion","Good oxygen","Normal","None"],correct:0},
-{q:"GI exam includes:",a:["Palpation","Eye exam","Ear exam","None"],correct:0},
-{q:"Anal glands location:",a:["5 & 7 o’clock","12","3","9"],correct:0},
-{q:"Musculoskeletal exam:",a:["Pain/lameness","Eyes","Ears","Skin"],correct:0},
-{q:"Neurologic exam:",a:["Reflexes","Hair","Skin","Eyes"],correct:0},
-{q:"Anisocoria:",a:["Unequal pupils","Equal pupils","None","Pain"],correct:0},
-{q:"Heart auscultation:",a:["Listen valves","Look eyes","None","Skin"],correct:0},
-{q:"Resp exam checks:",a:["Breathing","Skin","Hair","None"],correct:0},
-{q:"Normal MM color:",a:["Pink","Blue","White","Green"],correct:0},
-{q:"Capillary refill normal:",a:["<2 seconds",">5 seconds","None","10 sec"],correct:0},
-{q:"Hydration check:",a:["Skin tent","Eyes","Ears","Nose"],correct:0},
-{q:"History purpose:",a:["Gather info","Treat","Ignore","None"],correct:0}
-];
-
-// EMERGENCY (25)
-const emergency = [
-{q:"Triage means:",a:["Prioritize","Treat all","Ignore","None"],correct:0},
-{q:"Primary survey:",a:["ABC","XYZ","123","CAB"],correct:0},
-{q:"Shock is:",a:["Poor perfusion","Good flow","None","Heat"],correct:0},
-{q:"Hypovolemic shock:",a:["Fluid loss","Tumor","Pain","None"],correct:0},
-{q:"Cats in shock:",a:["Bradycardia","Tachy","Normal","None"],correct:0},
-{q:"Orthopnea:",a:["Breathing posture","Pain","None","Normal"],correct:0},
-{q:"CPR compressions:",a:["100-120","50","200","10"],correct:0},
-{q:"CPR breaths:",a:["10/min","5","20","50"],correct:0},
-{q:"Pulse ox measures:",a:["Oxygen","BP","Temp","Glucose"],correct:0},
-{q:"Crash cart:",a:["Emergency tools","Food","None","Beds"],correct:0},
-{q:"Septic shock:",a:["Infection","Trauma","Pain","None"],correct:0},
-{q:"Cardiogenic shock:",a:["Heart failure","Kidney","Skin","None"],correct:0},
-{q:"Distributive shock:",a:["Vasodilation","Fluid overload","Bone","None"],correct:0},
-{q:"Obstructive shock:",a:["Blocked flow","High BP","None","Temp"],correct:0},
-{q:"Dehydration 10%:",a:["Sunken eyes","Normal","Clear","None"],correct:0},
-{q:"Severe dehydration:",a:["Shock","Normal","Hydrated","None"],correct:0},
-{q:"GDV is:",a:["Emergency","Normal","Skin issue","None"],correct:0},
-{q:"Thoracocentesis:",a:["Chest fluid removal","GI","Bone","None"],correct:0},
-{q:"Abdominocentesis:",a:["Abdominal fluid removal","Chest","Bone","None"],correct:0},
-{q:"ECG measures:",a:["Heart","Lungs","Skin","None"],correct:0},
-{q:"Emergency priority:",a:["Airway","Hair","Skin","None"],correct:0},
-{q:"Perfusion signs:",a:["MM color","Hair","Nails","None"],correct:0},
-{q:"Resp distress sign:",a:["Open-mouth breathing","Sleeping","Eating","None"],correct:0},
-{q:"Shock treatment:",a:["Fluids","Food","Rest","None"],correct:0},
-{q:"Emergency goal:",a:["Stabilize","Feed","Discharge","None"],correct:0}
-];
+// ===== USE YOUR EXISTING QUESTION BANK HERE =====
+// (Keep your fluid, history, emergency arrays EXACTLY as you have them)
 
 // ================= GAME =================
 
@@ -170,11 +96,14 @@ totalQ=queue.length;
 qNum=0;
 
 menu.classList.add("hidden");
+results.classList.add("hidden");
 game.classList.remove("hidden");
 
 modeLabel.innerText="Mode: "+studyMode;
 
-score=0; total=0;
+score=0;
+total=0;
+
 nextQuestion();
 }
 
@@ -186,9 +115,18 @@ let j=Math.floor(Math.random()*(i+1));
 }
 
 function nextQuestion(){
+
+// 🔥 NEW: END LOGIC
 if(queue.length===0){
-alert("Final Score: "+score+"/"+total);
-location.reload();
+
+  if(studyMode === "exam"){
+    showResults();
+  } else {
+    alert("Final Score: "+score+"/"+total);
+    location.reload();
+  }
+
+  return;
 }
 
 currentQ=queue.shift();
@@ -226,6 +164,7 @@ confidenceBox.style.display="none";
 }
 
 function checkAnswer(correct,btn){
+
 total++;
 
 let buttons=document.querySelectorAll(".btn");
@@ -236,7 +175,11 @@ score++;
 if(studyMode!=="exam") btn.classList.add("correct");
 }else{
 if(studyMode!=="exam") btn.classList.add("wrong");
+
+// 🔥 FIX: no repeats in exam mode
+if(studyMode !== "exam"){
 queue.push(currentQ);
+}
 }
 
 if(studyMode!=="exam"){
@@ -252,7 +195,30 @@ feedback.innerText=correct?"Correct!":"Incorrect — review.";
 score.innerText="Score: "+score+" / "+total;
 }
 
-function goHome(){location.reload();}
+// ================= RESULTS =================
+
+function showResults(){
+
+game.classList.add("hidden");
+results.classList.remove("hidden");
+
+let percent = Math.round((score / totalQ) * 100);
+
+finalScore.innerText = "Score: " + score + " / " + totalQ;
+percentage.innerText = "Percentage: " + percent + "%";
+
+if(percent >= 70){
+passFail.innerText = "✅ PASS";
+passFail.style.color = "green";
+} else {
+passFail.innerText = "❌ Needs Review";
+passFail.style.color = "red";
+}
+}
+
+function goHome(){
+location.reload();
+}
 
 </script>
 

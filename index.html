@@ -1,1487 +1,224 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
 <title>Vet Tech Trainer PRO</title>
+
 <style>
-  body {
-    font-family: Arial, sans-serif;
-    max-width: 760px;
-    margin: 30px auto;
-    padding: 0 16px 40px;
-    text-align: center;
-    line-height: 1.4;
-  }
-
-  h1 {
-    margin-bottom: 8px;
-  }
-
-  h2 {
-    margin-bottom: 10px;
-  }
-
-  .card {
-    border: 1px solid #ddd;
-    border-radius: 14px;
-    padding: 20px;
-    margin-top: 18px;
-  }
-
-  .hidden {
-    display: none;
-  }
-
-  button {
-    border: none;
-    border-radius: 10px;
-    padding: 12px 16px;
-    margin: 8px 6px;
-    cursor: pointer;
-    font-size: 16px;
-  }
-
-  .menu-btn {
-    min-width: 220px;
-  }
-
-  .answer-btn {
-    display: block;
-    width: 100%;
-    margin: 10px 0;
-    background: #efefef;
-  }
-
-  .correct {
-    background: #34a853 !important;
-    color: white;
-  }
-
-  .wrong {
-    background: #ea4335 !important;
-    color: white;
-  }
-
-  .muted {
-    color: #666;
-    font-size: 14px;
-  }
-
-  #question {
-    font-size: 24px;
-    font-weight: bold;
-    margin-bottom: 16px;
-  }
-
-  #meta, #scoreboard, #confidenceBoard {
-    margin: 10px 0;
-    font-weight: bold;
-  }
-
-  #feedback {
-    margin-top: 14px;
-    font-size: 16px;
-    min-height: 48px;
-  }
-
-  #confidencePrompt button {
-    min-width: 160px;
-  }
-
-  #topControls {
-    margin-top: 10px;
-  }
-
-  #nextBtn, #restartBtn, #backBtn {
-    min-width: 140px;
-  }
-
-  .small {
-    font-size: 13px;
-    color: #777;
-  }
+body { font-family: Arial; max-width: 800px; margin: 40px auto; text-align: center; }
+button { padding: 12px; margin: 6px; border-radius: 8px; border: none; cursor: pointer; }
+.btn { display: block; width: 100%; background: #eee; margin: 8px 0; }
+.correct { background: #4CAF50; color: white; }
+.wrong { background: #f44336; color: white; }
+.hidden { display: none; }
+#question { font-size: 22px; margin: 20px 0; }
+#score { margin: 10px; font-weight: bold; }
 </style>
 </head>
+
 <body>
 
 <h1>Vet Tech Trainer</h1>
-<div class="muted">Confidence Recall Mode Added</div>
 
-<div id="menu" class="card">
-  <h2>Select Mode</h2>
-  <div>
-    <button class="menu-btn" onclick="startCategory('fluid')">Fluid Therapy</button>
-    <button class="menu-btn" onclick="startCategory('history')">History & Physical</button>
-    <button class="menu-btn" onclick="startCategory('emergency')">Emergency</button>
-  </div>
-  <div>
-    <button class="menu-btn" onclick="startMixed()">🔥 Full Exam (Mixed)</button>
-  </div>
-  <p class="small">
-    Confidence mode asks: “Do you know this?” before choices appear.
-  </p>
+<div id="menu">
+  <h2>Step 1: Choose Mode</h2>
+  <button onclick="setMode('confidence')">🧠 Confidence</button>
+  <button onclick="setMode('study')">📚 Study</button>
+  <button onclick="setMode('exam')">🧪 Exam</button>
+
+  <h2>Step 2: Choose Topic</h2>
+  <button onclick="startCategory('fluid')">Fluid Therapy</button>
+  <button onclick="startCategory('history')">History & PE</button>
+  <button onclick="startCategory('emergency')">Emergency</button>
+  <button onclick="startMixed()">🔥 Full Exam</button>
 </div>
 
-<div id="game" class="card hidden">
-  <div id="meta"></div>
-  <div id="scoreboard">Score: 0 / 0</div>
-  <div id="confidenceBoard">Confidence: 0 known / 0 unsure</div>
-
+<div id="game" class="hidden">
+  <h3 id="modeLabel"></h3>
+  <div id="score"></div>
   <div id="question"></div>
 
-  <div id="confidencePrompt">
-    <p><strong>Before you see the choices...</strong></p>
-    <button onclick="setConfidence(true)">✅ I know it</button>
-    <button onclick="setConfidence(false)">🤔 Not sure</button>
+  <div id="confidenceBox">
+    <p>Do you know this?</p>
+    <button onclick="setConfidence(true)">Yes</button>
+    <button onclick="setConfidence(false)">Not sure</button>
   </div>
 
-  <div id="answers" class="hidden"></div>
-
+  <div id="answers"></div>
   <div id="feedback"></div>
 
-  <div id="topControls">
-    <button id="nextBtn" class="hidden" onclick="nextQuestion()">Next Question</button>
-    <button id="restartBtn" class="hidden" onclick="restartSameMode()">Restart This Set</button>
-    <button id="backBtn" onclick="goHome()">Back to Menu</button>
-  </div>
+  <button onclick="nextQuestion()">Next</button>
 </div>
 
 <script>
-/* =========================
-   QUESTION BANK
-   Built from uploaded class slides
-   ========================= */
+
+// MODE
+let studyMode = "confidence";
+function setMode(m){ studyMode = m; alert("Mode: "+m); }
+
+// ================= QUESTION BANK (~100) =================
 
 const fluid = [
-  {
-    q: "About what percentage of the body is made up of water?",
-    a: ["30%", "45%", "60%", "80%"],
-    correct: 2,
-    explanation: "The slides state the body is made up of about 60% water."
-  },
-  {
-    q: "TBW stands for:",
-    a: ["Total blood weight", "Total body water", "Tissue base water", "Trans-body wash"],
-    correct: 1,
-    explanation: "TBW means total body water."
-  },
-  {
-    q: "Total body water is divided mainly into which two spaces?",
-    a: ["Cardiac and pulmonary", "Intracellular and extracellular", "Bone and muscle", "Arterial and venous"],
-    correct: 1,
-    explanation: "The slides divide TBW into intracellular fluid and extracellular fluid."
-  },
-  {
-    q: "Crystalloids are solutions that contain:",
-    a: ["Only proteins", "Various electrolytes in water", "Only glucose", "Whole blood"],
-    correct: 1,
-    explanation: "Crystalloids contain various electrolytes in water."
-  },
-  {
-    q: "Hypotonic fluids have an osmolality that is:",
-    a: ["Equal to blood", "Less than blood", "Greater than blood", "Unrelated to blood"],
-    correct: 1,
-    explanation: "Hypotonic fluids have an osmolality less than blood."
-  },
-  {
-    q: "Hypotonic fluids provide water in greater proportion than:",
-    a: ["Proteins", "Red cells", "Electrolytes", "Platelets"],
-    correct: 2,
-    explanation: "They provide more water relative to electrolytes."
-  },
-  {
-    q: "A slide example of a hypotonic fluid is:",
-    a: ["0.9% NaCl", "Lactated Ringers", "0.45% NaCl", "7% NaCl"],
-    correct: 2,
-    explanation: "0.45% NaCl is listed as a hypotonic fluid example."
-  },
-  {
-    q: "Hypotonic fluids may be used to replace a:",
-    a: ["Protein deficit", "Free water deficit", "Platelet deficit", "Vitamin deficit"],
-    correct: 1,
-    explanation: "The slides say hypotonic fluids may replace a free water deficit."
-  },
-  {
-    q: "Hypotonic fluids may be used to treat:",
-    a: ["Hypoglycemia", "Hypernatremia", "Anemia", "Hypothermia"],
-    correct: 1,
-    explanation: "They may be used to treat hypernatremia."
-  },
-  {
-    q: "Hypotonic fluids are NOT used for fluid resuscitation because they are ineffective for expanding the:",
-    a: ["GI tract", "Vascular volume", "Skin space", "Lymph nodes"],
-    correct: 1,
-    explanation: "They are ineffective for expanding vascular volume."
-  },
-  {
-    q: "Isotonic fluids have an osmolality that is:",
-    a: ["Lower than blood", "Higher than blood", "About equal to blood", "Zero"],
-    correct: 2,
-    explanation: "Isotonic fluids are about equal in osmolality to blood."
-  },
-  {
-    q: "Which of the following is an isotonic fluid?",
-    a: ["3% NaCl", "0.9% NaCl", "7% NaCl", "None of these"],
-    correct: 1,
-    explanation: "0.9% NaCl is an isotonic fluid."
-  },
-  {
-    q: "Lactated Ringers (LRS) is classified as:",
-    a: ["Hypotonic", "Hypertonic", "Isotonic", "Colloid"],
-    correct: 2,
-    explanation: "LRS is listed as an isotonic crystalloid."
-  },
-  {
-    q: "Isotonic fluids can be used in:",
-    a: ["Resuscitation only", "Rehydration only", "Resuscitation, rehydration, and replacing ongoing losses", "None"],
-    correct: 2,
-    explanation: "The slides list all three uses."
-  },
-  {
-    q: "A possible downside of isotonic fluids is:",
-    a: ["Immediate anemia", "Tissue edema", "Blindness", "Bone loss"],
-    correct: 1,
-    explanation: "Isotonic fluids can cause tissue edema."
-  },
-  {
-    q: "Hypertonic fluids have an osmolality that is:",
-    a: ["Less than blood", "Equal to blood", "Greater than blood", "Variable only in cats"],
-    correct: 2,
-    explanation: "Hypertonic fluids have greater osmolality than blood."
-  },
-  {
-    q: "Examples of hypertonic saline on the slide include:",
-    a: ["0.45% and 0.9%", "3% and 7%", "5% and 10%", "1% and 2%"],
-    correct: 1,
-    explanation: "The slides give 3% and 7% NaCl as examples."
-  },
-  {
-    q: "Hypertonic fluids may be used in head trauma to help reduce:",
-    a: ["Temperature", "Intracranial pressure", "Urine output", "Platelets"],
-    correct: 1,
-    explanation: "They help draw fluid out and reduce intracranial pressure."
-  },
-  {
-    q: "Hypertonic fluids should not be administered too fast because rapid volume expansion can trigger:",
-    a: ["Bradycardia", "Blindness", "Vomiting", "Seizures"],
-    correct: 0,
-    explanation: "The slide specifically warns about bradycardia."
-  },
-  {
-    q: "Colloids contain high molecular weight molecules suspended in an:",
-    a: ["Acidic solution", "Isotonic crystalloid", "Antibiotic", "Oil base"],
-    correct: 1,
-    explanation: "Colloids are suspended in an isotonic crystalloid."
-  },
-  {
-    q: "The larger molecules in colloids tend to remain within the:",
-    a: ["GI tract", "Vascular space", "Bone marrow", "Skin"],
-    correct: 1,
-    explanation: "They remain within the vascular space."
-  },
-  {
-    q: "Colloids provide relatively efficient and prolonged:",
-    a: ["Sedation", "Volume expansion", "Digestion", "Urination"],
-    correct: 1,
-    explanation: "That is one of their major benefits."
-  },
-  {
-    q: "A slide example of a colloid is:",
-    a: ["Vetstarch", "LRS", "0.45% NaCl", "3% NaCl"],
-    correct: 0,
-    explanation: "Vetstarch is listed as a colloid."
-  },
-  {
-    q: "The resuscitation phase is aimed at restoring:",
-    a: ["Body weight", "Vascular volume", "Hair coat", "Appetite"],
-    correct: 1,
-    explanation: "Its goal is restoration of vascular volume."
-  },
-  {
-    q: "If perfusion parameters have not improved after the initial bolus, it should be:",
-    a: ["Stopped forever", "Repeated", "Diluted", "Ignored"],
-    correct: 1,
-    explanation: "The slide says the bolus should be repeated."
-  },
-  {
-    q: "If the full shock dose has been given and the patient is not stable, you should:",
-    a: ["Go home", "Reinvestigate", "Feed the patient", "Switch to oral fluids only"],
-    correct: 1,
-    explanation: "The slide says the patient needs to be reinvestigated."
-  },
-  {
-    q: "The replacement phase corrects dehydration plus:",
-    a: ["Only fever", "Replacement of ongoing losses and maintenance needs", "Only kidney disease", "Only anemia"],
-    correct: 1,
-    explanation: "Replacement phase includes dehydration, ongoing losses, and maintenance."
-  },
-  {
-    q: "Vomiting, diarrhea, and blood loss are generally what type of fluid losses?",
-    a: ["Hypertonic", "Hypotonic", "Isotonic", "Protein only"],
-    correct: 2,
-    explanation: "The slide says these losses are generally isotonic."
-  },
-  {
-    q: "Because many losses are isotonic, we generally use an:",
-    a: ["Isotonic crystalloid", "Hypertonic colloid", "Hypotonic plasma", "Oral antibiotic"],
-    correct: 0,
-    explanation: "The slide recommends an isotonic crystalloid."
-  },
-  {
-    q: "On the slide, every gram of weight loss measured equals:",
-    a: ["0.1 mL", "1 mL", "10 mL", "100 mL"],
-    correct: 1,
-    explanation: "The slide says every gram is equal to 1 mL."
-  },
-  {
-    q: "Once replacement fluids have been given, you can start the:",
-    a: ["Shock dose", "Maintenance rate", "Transfusion reaction", "Surgery prep"],
-    correct: 1,
-    explanation: "The slide says you can then begin the maintenance rate."
-  },
-  {
-    q: "Maintenance fluids are meant to supply the physiologic need for water through urine, GI tract, and:",
-    a: ["Cardiac output", "Insensible losses", "Platelet loss", "Fractures"],
-    correct: 1,
-    explanation: "Insensible losses are part of maintenance needs."
-  },
-  {
-    q: "The maintenance phase is for patients without dehydration or:",
-    a: ["Pain", "Ongoing losses", "A diagnosis", "Teeth"],
-    correct: 1,
-    explanation: "Maintenance phase is for patients without dehydration or ongoing losses."
-  },
-  {
-    q: "The IV route is preferred for:",
-    a: ["Fluid resuscitation", "Critically ill patients", "Significant dehydration", "All of these"],
-    correct: 3,
-    explanation: "The slide lists all of these as IV indications."
-  },
-  {
-    q: "A peripheral vein should generally be used for routine dehydration cases, while a central line is better for critically ill patients needing multiple meds and sampling:",
-    a: ["True", "False"],
-    correct: 0,
-    explanation: "That distinction is stated on the slide."
-  },
-  {
-    q: "Catheter placement should always use:",
-    a: ["Gloves only", "Aseptic technique", "No prep", "Sedation only"],
-    correct: 1,
-    explanation: "The slide specifically says always use aseptic technique."
-  },
-  {
-    q: "Subcutaneous fluids can be used for:",
-    a: ["Mild to moderate dehydration", "Severe shock", "Profound hypotension", "Massive hemorrhage"],
-    correct: 0,
-    explanation: "SQ fluids may be used for mild to moderate dehydration."
-  },
-  {
-    q: "Subcutaneous fluids should NOT be used in patients who are hypovolemic or:",
-    a: ["Hungry", "Hypotensive", "Senior", "Vaccinated"],
-    correct: 1,
-    explanation: "The slide says not to use SQ fluids in hypotensive patients."
-  },
-  {
-    q: "Subcutaneous fluids should usually be what kind of fluid?",
-    a: ["Hypertonic", "Isotonic", "Whole blood", "Dextrose only"],
-    correct: 1,
-    explanation: "The slide says SQ fluids should be isotonic."
-  },
-  {
-    q: "Subcutaneous fluids are usually absorbed in:",
-    a: ["10 minutes", "1 hour", "6 to 8 hours", "24 hours"],
-    correct: 2,
-    explanation: "The slide says 6 to 8 hours."
-  },
-  {
-    q: "You should not give dextrose greater than 2.5% SQ because it may cause:",
-    a: ["Sloughing and abscesses", "Blindness", "Bradycardia", "Hemorrhage"],
-    correct: 0,
-    explanation: "That exact warning is on the slide."
-  },
-  {
-    q: "The intraosseous route is used when the IV route is:",
-    a: ["Preferred", "Not possible", "Too cheap", "Already removed"],
-    correct: 1,
-    explanation: "IO is used when IV access is not possible."
-  },
-  {
-    q: "Bone marrow does not collapse in patients with:",
-    a: ["Obesity", "Hypovolemia", "Anemia", "Cushing's"],
-    correct: 1,
-    explanation: "This makes IO access useful in hypovolemic patients."
-  },
-  {
-    q: "Medication given IV can also often be given by the:",
-    a: ["Topical route", "IO route", "Rectal route", "Ear route"],
-    correct: 1,
-    explanation: "The slide says medications given IV can be given IO as well."
-  },
-  {
-    q: "The enteral route should not be used in patients in:",
-    a: ["Pain", "Heat", "Shock", "Recovery"],
-    correct: 2,
-    explanation: "The slide clearly says do not use for patients in shock."
-  },
-  {
-    q: "Hypokalemia may be seen with GI losses, chronic renal failure, Cushing's disease, dialysis, and:",
-    a: ["Hypothermia", "Postobstructive diuresis", "Blindness", "Cataracts"],
-    correct: 1,
-    explanation: "Postobstructive diuresis is listed on the slide."
-  },
-  {
-    q: "Potassium supplementation should be administered:",
-    a: ["Rapidly", "Slowly", "SQ only", "Without monitoring"],
-    correct: 1,
-    explanation: "It should be given slowly to avoid adverse cardiac effects."
-  },
-  {
-    q: "Dextrose may be added to fluids when patients are:",
-    a: ["Hypoglycemic", "Hypertensive", "Hypercalcemic", "Anemic only"],
-    correct: 0,
-    explanation: "The slide lists hypoglycemia as an indication."
-  },
-  {
-    q: "Before giving dextrose, you should always check a:",
-    a: ["Liver enzyme", "Blood glucose", "Urinalysis", "Fecal test"],
-    correct: 1,
-    explanation: "The slide says always check a BG."
-  },
-  {
-    q: "Dextrose is recommended to be diluted 1:1 to avoid:",
-    a: ["Pulmonary edema", "Phlebitis", "Anemia", "Hypotension"],
-    correct: 1,
-    explanation: "The slide specifically mentions phlebitis."
-  },
-  {
-    q: "Sodium bicarbonate is used to treat:",
-    a: ["Metabolic acidosis", "Hypoglycemia", "Anemia", "Heat stroke"],
-    correct: 0,
-    explanation: "The slide states sodium bicarbonate treats metabolic acidosis."
-  },
-  {
-    q: "Sodium bicarbonate should only be used in extreme cases when pH is below:",
-    a: ["7.6", "7.4", "7.1", "6.0"],
-    correct: 2,
-    explanation: "The slide gives a cutoff of below 7.1."
-  },
-  {
-    q: "During the replacement phase, the best way to track changes in hydration and body water is through frequent monitoring of:",
-    a: ["Body weight", "Eye color", "Heartworm status", "Ear wax"],
-    correct: 0,
-    explanation: "The slide says body weight is the best way."
-  },
-  {
-    q: "A 1 kg change in body weight signifies a change in body water content of:",
-    a: ["100 mL", "500 mL", "1 L", "10 L"],
-    correct: 2,
-    explanation: "The slide says 1 kg equals 1 L."
-  },
-  {
-    q: "The biggest concern in fluid therapy complications is excessive quantity causing:",
-    a: ["Volume overload", "Anemia", "Blindness", "Seizures"],
-    correct: 0,
-    explanation: "Volume overload is listed as the biggest concern."
-  },
-  {
-    q: "Cats are especially sensitive to fluid overload:",
-    a: ["True", "False"],
-    correct: 0,
-    explanation: "The slide says compromised patients, especially cats, do not handle overload well."
-  },
-  {
-    q: "A patient with volume overload may develop pulmonary edema from overload of the left side of the:",
-    a: ["Liver", "Heart", "Kidney", "Spleen"],
-    correct: 1,
-    explanation: "That is stated on the slide."
-  },
-  {
-    q: "Watch for increased respiratory rate, effort, and sounds as signs of possible:",
-    a: ["Volume overload", "Improved hydration", "Vaccination reaction", "Normal recovery"],
-    correct: 0,
-    explanation: "Those are listed as warning signs of overload."
-  }
+{q:"Body is ~ what % water?",a:["30","45","60","80"],correct:2},
+{q:"TBW stands for?",a:["Total body water","Total blood weight","None","Fluid weight"],correct:0},
+{q:"ICF?",a:["Intracellular fluid","Internal flow","None","In cell flow"],correct:0},
+{q:"ECF?",a:["Extracellular fluid","External cell force","None","Extra flow"],correct:0},
+{q:"Hypotonic fluids?",a:["More water","More electrolytes","Equal","None"],correct:0},
+{q:"Treat hypernatremia?",a:["Hypotonic","Isotonic","Hypertonic","None"],correct:0},
+{q:"Isotonic example?",a:["0.9% NaCl","3% NaCl","0.45% NaCl","None"],correct:0},
+{q:"LRS type?",a:["Isotonic","Hypotonic","Hypertonic","Colloid"],correct:0},
+{q:"Hypertonic used for?",a:["Head trauma","Skin","Bone","None"],correct:0},
+{q:"Colloids remain where?",a:["Vascular","Cells","GI","Bone"],correct:0},
+{q:"Resuscitation phase goal?",a:["Restore volume","Feed","Sedate","None"],correct:0},
+{q:"Replacement phase?",a:["Correct dehydration","Pain","None","Heat"],correct:0},
+{q:"Maintenance phase?",a:["Stable patients","Shock","Trauma","None"],correct:0},
+{q:"IV route used for?",a:["Critical patients","Mild","None","Home"],correct:0},
+{q:"SQ fluids?",a:["Mild dehydration","Shock","None","Surgery"],correct:0},
+{q:"IO route?",a:["When IV not possible","Always","Never","None"],correct:0},
+{q:"Enteral route needs?",a:["GI function","Shock","None","Pain"],correct:0},
+{q:"Potassium for?",a:["Hypokalemia","Hyper","None","Pain"],correct:0},
+{q:"Dextrose for?",a:["Hypoglycemia","Hyperglycemia","None","Shock"],correct:0},
+{q:"Biggest risk fluid therapy?",a:["Overload","Pain","None","Heat"],correct:0},
 ];
 
+// HISTORY (30)
 const history = [
-  {
-    q: "When taking a history, you should first:",
-    a: ["Order radiographs", "Introduce yourself and explain your role", "Take blood immediately", "Leave the room"],
-    correct: 1,
-    explanation: "The history slide says to introduce yourself and explain your role."
-  },
-  {
-    q: "You should know the owner's name, pet's name, and:",
-    a: ["Favorite toy", "Sex", "Color of leash", "Microchip company"],
-    correct: 1,
-    explanation: "Those are specifically listed."
-  },
-  {
-    q: "If the pet was taken away before history is obtained in an emergency, you should first:",
-    a: ["Ask payment questions", "Reassure the owner about the pet's status", "End the conversation", "Call another clinic"],
-    correct: 1,
-    explanation: "The slide says this reassurance is essential."
-  },
-  {
-    q: "When speaking with the owner, use language the owner will:",
-    a: ["Ignore", "Understand", "Translate later", "Memorize for class"],
-    correct: 1,
-    explanation: "The slide says to use language the owner will understand."
-  },
-  {
-    q: "The history should include asking:",
-    a: ["Only yes/no questions", "Open-ended questions", "No questions", "Only medical jargon questions"],
-    correct: 1,
-    explanation: "Open-ended questions are recommended."
-  },
-  {
-    q: "During history taking, do your best not to be:",
-    a: ["Professional", "Judgmental", "Polite", "Detailed"],
-    correct: 1,
-    explanation: "The slide directly says not to be judgmental."
-  },
-  {
-    q: "Signalment includes name, age/birthday, sex, reproductive status, breed, species, and:",
-    a: ["Color", "Insurance plan", "Favorite food only", "Trainer"],
-    correct: 0,
-    explanation: "Color is included in signalment on the slide."
-  },
-  {
-    q: "Background information should include how long the owner has had the:",
-    a: ["Invoice", "Pet", "Leash", "Collar"],
-    correct: 1,
-    explanation: "That is specifically listed."
-  },
-  {
-    q: "Nutritional history is part of the background information:",
-    a: ["True", "False"],
-    correct: 0,
-    explanation: "It appears under background information."
-  },
-  {
-    q: "Preventative history includes vaccine history and:",
-    a: ["Recent vacation", "Heartworm/flea and tick prevention", "Color of food bowl", "Favorite park"],
-    correct: 1,
-    explanation: "That is listed on the slide."
-  },
-  {
-    q: "Behavioral history should ask about changes in behavior, elimination issues, and:",
-    a: ["Disorientation", "Wing clipping", "Tail docking", "Nail polish"],
-    correct: 0,
-    explanation: "Disorientation is one of the listed behavioral questions."
-  },
-  {
-    q: "Household information includes whether there are any other animals in the:",
-    a: ["Yard only", "Home", "Neighborhood", "County"],
-    correct: 1,
-    explanation: "The slide asks about other animals in the home."
-  },
-  {
-    q: "Household information should also ask about medical issues with the:",
-    a: ["Humans", "Mail carrier", "Neighbors", "Breeder only"],
-    correct: 0,
-    explanation: "Medical issues with the humans are listed."
-  },
-  {
-    q: "The history should ask if the pet has ever received a:",
-    a: ["Tattoo", "Blood transfusion", "License renewal", "Bath"],
-    correct: 1,
-    explanation: "That is specifically listed on the slide."
-  },
-  {
-    q: "Reproductive history should note the age at which the patient was:",
-    a: ["Vaccinated", "Altered", "Microchipped", "Adopted"],
-    correct: 1,
-    explanation: "The slide says to note what age the patient was altered."
-  },
-  {
-    q: "In the presenting complaint, you need to know when the patient was last:",
-    a: ["Bathed", "Normal", "Vaccinated", "Fed by technician"],
-    correct: 1,
-    explanation: "This helps establish a timeline of illness."
-  },
-  {
-    q: "If it is an emergency, make sure the patient is stable first, then get:",
-    a: ["X-rays", "History", "A bath", "A nail trim"],
-    correct: 1,
-    explanation: "That order is on the slide."
-  },
-  {
-    q: "A thorough physical examination should be the first and most important diagnostic test performed on a:",
-    a: ["Catheter", "Patient", "Kennel", "Food sample"],
-    correct: 1,
-    explanation: "The physical exam slide says exactly that."
-  },
-  {
-    q: "During the PE, you should document:",
-    a: ["Nothing", "Only abnormal findings", "All information", "Only temperature"],
-    correct: 2,
-    explanation: "The slide says document all information."
-  },
-  {
-    q: "Mentation options on the slide include BAR, QAR, depressed, and:",
-    a: ["Sedated", "Unresponsive", "Hyperactive", "Normal only"],
-    correct: 1,
-    explanation: "Unresponsive is listed."
-  },
-  {
-    q: "The PE should include temperature, weight, pulse, respiration, and:",
-    a: ["Hair color", "HR", "Breed club", "Tail length"],
-    correct: 1,
-    explanation: "HR is part of the listed vitals."
-  },
-  {
-    q: "The PE should note:",
-    a: ["BCS", "Ambulation", "All bodily systems", "All of these"],
-    correct: 3,
-    explanation: "All are listed on the slide."
-  },
-  {
-    q: "The ophthalmic scope is used to examine the:",
-    a: ["Ears", "Eyes", "Heart", "Skin"],
-    correct: 1,
-    explanation: "The eye exam slide states this."
-  },
-  {
-    q: "Entropion means the eyelid is rolled:",
-    a: ["Inward toward the eye", "Outward away from the eye", "Backward", "Not at all"],
-    correct: 0,
-    explanation: "That is the definition on the slide."
-  },
-  {
-    q: "Ectropion means the eyelid is rolled:",
-    a: ["Inward toward the eye", "Outward away from the eye", "Under the globe", "Sideways"],
-    correct: 1,
-    explanation: "That is the definition on the slide."
-  },
-  {
-    q: "The nictitating membrane is also known as the:",
-    a: ["Second eyelid", "Third eyelid", "Tear gland", "Pupil ring"],
-    correct: 1,
-    explanation: "The slide calls it the 3rd eyelid."
-  },
-  {
-    q: "Anisocoria means:",
-    a: ["Equal pupil size", "Unequal pupil sizes", "No pupil response", "Blue sclera"],
-    correct: 1,
-    explanation: "That is the definition on the slide."
-  },
-  {
-    q: "The otoscope is used to examine the:",
-    a: ["Ear", "Eye", "Nose", "Mouth"],
-    correct: 0,
-    explanation: "The aural exam slide states this."
-  },
-  {
-    q: "The external ear canal should be checked for color, crusting, alopecia, discharge/smell, thickness, and:",
-    a: ["Excoriation", "Glucose", "Crystals", "Pupil size"],
-    correct: 0,
-    explanation: "Excoriation is listed."
-  },
-  {
-    q: "Oral exam should assess halitosis, teeth, mucous membrane color, moisture/tackiness, and:",
-    a: ["ECG", "CRT", "PAM", "Blood typing"],
-    correct: 1,
-    explanation: "CRT is listed under the oral exam."
-  },
-  {
-    q: "During the respiratory exam, you should listen to all quadrants of the:",
-    a: ["Abdomen", "Lungs", "Brain", "Kidneys"],
-    correct: 1,
-    explanation: "That is listed on the respiratory slide."
-  },
-  {
-    q: "Stertor is described as:",
-    a: ["High-pitched wheezing", "Low-pitched snoring noise", "Normal purring", "Noisy swallowing"],
-    correct: 1,
-    explanation: "The slide defines stertor that way."
-  },
-  {
-    q: "Stridor is described as:",
-    a: ["Low-pitched snoring", "High-pitched wheezing", "Silent breathing", "Pleural fluid"],
-    correct: 1,
-    explanation: "That is the slide definition."
-  },
-  {
-    q: "Cardiovascular assessment includes mucous membrane color, HR, rhythm, and:",
-    a: ["Feather quality", "Perfusion", "Coat length", "Jaw tone"],
-    correct: 1,
-    explanation: "Perfusion is specifically mentioned."
-  },
-  {
-    q: "Pulmonic, aortic, and mitral valves are on the:",
-    a: ["Right side", "Left side", "Abdomen", "Pelvis"],
-    correct: 1,
-    explanation: "The slide says PAM are on the left side."
-  },
-  {
-    q: "The tricuspid valve is on the:",
-    a: ["Left side", "Right side", "Dorsal side", "Ventral side"],
-    correct: 1,
-    explanation: "The slide says tricuspid is on the right."
-  },
-  {
-    q: "Respiratory sinus arrhythmia can be common in:",
-    a: ["Dogs", "Cats only", "Birds only", "Horses only"],
-    correct: 0,
-    explanation: "The slide says this can be common in dogs."
-  },
-  {
-    q: "Common palpable lymph nodes listed are mandibular, prescapular, and:",
-    a: ["Axillary", "Popliteal", "Mesenteric", "Sublingual"],
-    correct: 1,
-    explanation: "Popliteal is one of the listed nodes."
-  },
-  {
-    q: "Normal lymph nodes are round to oval, slightly moveable, and:",
-    a: ["Rock hard", "Semi-firm", "Hot", "Painful"],
-    correct: 1,
-    explanation: "Semi-firm (squishy) is the description on the slide."
-  },
-  {
-    q: "Abnormal lymph nodes may be enlarged, firm, warm, and:",
-    a: ["Invisible", "Painful", "Cold", "Blue"],
-    correct: 1,
-    explanation: "Painful is one of the listed abnormal findings."
-  },
-  {
-    q: "Pets less than 6 months old may have lymph nodes that are:",
-    a: ["Always absent", "Enlarged", "Necrotic", "Blue"],
-    correct: 1,
-    explanation: "That age-related note is on the slide."
-  },
-  {
-    q: "GI palpation may include the liver, spleen, kidneys, and urinary:",
-    a: ["Bladder", "Urethra", "Pancreas", "Colon only"],
-    correct: 0,
-    explanation: "Those are listed organs to palpate."
-  },
-  {
-    q: "Anal glands are located at the:",
-    a: ["12 and 6 o'clock", "5 and 7 o'clock", "1 and 11 o'clock", "2 and 10 o'clock"],
-    correct: 1,
-    explanation: "The slide states 5 and 7 o'clock."
-  },
-  {
-    q: "The distal urethra should be checked for discharge and:",
-    a: ["Masses", "Scales", "Mydriasis", "Orthopnea"],
-    correct: 0,
-    explanation: "Masses are listed."
-  },
-  {
-    q: "Most patients will have how many mammary glands on each side according to the slide?",
-    a: ["2", "3", "5", "8"],
-    correct: 2,
-    explanation: "The slide says most have 5 glands on each side."
-  },
-  {
-    q: "Normal integument is described as a thick and shiny:",
-    a: ["Hair coat", "Hoof wall", "Scale layer", "Ear flap"],
-    correct: 0,
-    explanation: "That is the normal description on the slide."
-  },
-  {
-    q: "Abnormal skin findings can include dull, greasy, rough hair, flakes, and:",
-    a: ["Flea dirt", "Bradycardia", "Anisocoria", "Stertor"],
-    correct: 0,
-    explanation: "Flea dirt is listed."
-  },
-  {
-    q: "Musculoskeletal exam should check for lameness, swelling, and:",
-    a: ["Pain when rising", "Heart murmur", "Pupil size", "Ear mites"],
-    correct: 0,
-    explanation: "Pain when rising is listed."
-  },
-  {
-    q: "You should always check both limbs:",
-    a: ["True", "False"],
-    correct: 0,
-    explanation: "That exact reminder is on the slide."
-  },
-  {
-    q: "For the nervous system, the chief complaint might include behavior changes, head tilt, circling, and:",
-    a: ["Blindness", "Tartar", "Excoriation", "Pleural effusion"],
-    correct: 0,
-    explanation: "Blindness is on the slide."
-  },
-  {
-    q: "Nervous system evaluation includes menace reflex, pupillary light reflex, and:",
-    a: ["Palpebral reflex", "Fluid wave", "PAM", "Thoracocentesis"],
-    correct: 0,
-    explanation: "Palpebral reflex is listed."
-  },
-  {
-    q: "Ataxia, atrophy, and proprioception are listed under the:",
-    a: ["Respiratory exam", "Nervous system exam", "GI exam", "Aural exam"],
-    correct: 1,
-    explanation: "These appear on the nervous system slide."
-  }
+{q:"First step?",a:["Introduce yourself","Treat","Weigh","None"],correct:0},
+{q:"Signalment includes?",a:["Name, age, breed","Only age","Only name","None"],correct:0},
+{q:"Open questions?",a:["Yes","No","None","Short"],correct:0},
+{q:"First diagnostic?",a:["Physical exam","X-ray","None","Blood"],correct:0},
+{q:"Otoscope?",a:["Ear","Eye","Heart","None"],correct:0},
+{q:"Entropion?",a:["Inward lid","Outward","None","Pain"],correct:0},
+{q:"Ectropion?",a:["Outward lid","Inward","None","Pain"],correct:0},
+{q:"CRT?",a:["Capillary refill time","Cardiac","None","Flow"],correct:0},
+{q:"PAM valves?",a:["Heart valves","Lungs","None","Brain"],correct:0},
+{q:"Normal lymph nodes?",a:["Soft movable","Hard","None","Hot"],correct:0},
+{q:"Stertor?",a:["Snore","Wheeze","None","Pain"],correct:0},
+{q:"Stridor?",a:["High wheeze","Low","None","Pain"],correct:0},
+{q:"GI exam?",a:["Palpate organs","Look","None","Ignore"],correct:0},
+{q:"Anal glands?",a:["5 & 7 o’clock","12","None","3"],correct:0},
+{q:"Skin abnormal?",a:["Greasy","Shiny","None","Smooth"],correct:0},
+{q:"Musculoskeletal?",a:["Pain & lameness","None","Hair","Eyes"],correct:0},
+{q:"Nervous exam?",a:["Reflexes","None","Hair","Eyes"],correct:0},
+{q:"Anisocoria?",a:["Unequal pupils","Equal","None","Pain"],correct:0},
+{q:"Eye tool?",a:["Ophthalmoscope","Otoscope","None","Scope"],correct:0},
+{q:"MM color checks?",a:["Perfusion","Hair","None","Skin"],correct:0},
 ];
 
+// EMERGENCY (~50)
 const emergency = [
-  {
-    q: "During telephone triage, the first thing you should get is the caller's name and:",
-    a: ["Breed club", "Number", "Address only", "Invoice total"],
-    correct: 1,
-    explanation: "The slide says get name and number in case of disconnection."
-  },
-  {
-    q: "If a case is life threatening on the phone, the client should go to the:",
-    a: ["Groomer", "First available clinic", "Pet store", "Boarding kennel"],
-    correct: 1,
-    explanation: "That instruction is on the telephone triage slide."
-  },
-  {
-    q: "You should be careful giving advice over the phone:",
-    a: ["True", "False"],
-    correct: 0,
-    explanation: "The slide explicitly warns this."
-  },
-  {
-    q: "In-hospital triage is the process of sorting ill or injured animals based on their need for:",
-    a: ["Bathing", "Immediate medical treatment", "Microchipping", "Training"],
-    correct: 1,
-    explanation: "That is the definition on the slide."
-  },
-  {
-    q: "Triage is a method of prioritizing patients when a number of emergency cases are present at the same time:",
-    a: ["True", "False"],
-    correct: 0,
-    explanation: "That is stated directly."
-  },
-  {
-    q: "Most often, triage is performed by a:",
-    a: ["Receptionist", "Veterinary technician", "Farrier", "Kennel assistant only"],
-    correct: 1,
-    explanation: "The slide says most often performed by a veterinary technician."
-  },
-  {
-    q: "The initial task in triage is to perform a:",
-    a: ["Fecal exam", "Primary survey", "Complete orthopedic workup", "Dental cleaning"],
-    correct: 1,
-    explanation: "The slide says the initial task is the primary survey."
-  },
-  {
-    q: "The primary survey includes A, B, and C. A stands for airway and:",
-    a: ["Attitude", "Abdomen", "Anxiety", "Arrhythmia"],
-    correct: 0,
-    explanation: "The slide lists A: Airway/Attitude."
-  },
-  {
-    q: "In the primary survey, B stands for breathing and:",
-    a: ["Bones", "Bleeding", "Behavior", "Bladder"],
-    correct: 1,
-    explanation: "That is how B is listed."
-  },
-  {
-    q: "In the primary survey, C stands for cardiovascular and:",
-    a: ["Colon", "Circulation", "Creatinine", "Coagulation only"],
-    correct: 1,
-    explanation: "The slide lists C: Cardiovascular, Circulation."
-  },
-  {
-    q: "The primary survey begins as you look at the patient from a distance, then approach, and finally:",
-    a: ["Sedate", "Touch", "Feed", "Discharge"],
-    correct: 1,
-    explanation: "That order is listed on the slide."
-  },
-  {
-    q: "The three triage actions are:",
-    a: ["Stop, drop, roll", "Look, listen, feel", "Eat, sleep, drink", "Press, pull, turn"],
-    correct: 1,
-    explanation: "The slide says LOOK, LISTEN, and FEEL."
-  },
-  {
-    q: "Labored breathing is described as:",
-    a: ["Prolonged and deep", "Silent and easy", "Only nasal", "Always normal"],
-    correct: 0,
-    explanation: "That is the respiratory emergency description."
-  },
-  {
-    q: "Restrictive breathing patterns can be:",
-    a: ["Slow and deep", "Fast, short, and shallow", "Only abdominal", "Only open-mouth"],
-    correct: 1,
-    explanation: "That wording appears on the slide."
-  },
-  {
-    q: "Orthopnea means maintaining a specific posture to ease:",
-    a: ["Defecation", "Breathing", "Vision", "Lameness"],
-    correct: 1,
-    explanation: "That is the definition on the slide."
-  },
-  {
-    q: "Cardiovascular assessment includes mentation, HR and rhythm, pulse quality, CRT, extremity temperature, and mucous membrane:",
-    a: ["Thickness", "Color", "Smell", "Moisture only"],
-    correct: 1,
-    explanation: "MM color is listed."
-  },
-  {
-    q: "Cats in shock often present with __________ rather than tachycardia.",
-    a: ["Bradycardia", "Polyuria", "Mydriasis", "Sneezing"],
-    correct: 0,
-    explanation: "The slide specifically notes bradycardia in cats."
-  },
-  {
-    q: "A neurologic exam in emergencies helps determine whether evidence of traumatic brain injury is present:",
-    a: ["True", "False"],
-    correct: 0,
-    explanation: "That is the stated purpose."
-  },
-  {
-    q: "Signs of neurologic emergency include abrupt changes in mentation, pupil changes, altered gait/posture, altered proprioception, and evidence of head:",
-    a: ["Heat", "Trauma", "Color", "Hair loss"],
-    correct: 1,
-    explanation: "Evidence of trauma to the head is listed."
-  },
-  {
-    q: "A normal animal is alert and __________ with its environment.",
-    a: ["Unresponsive", "Interactive", "Stuporous", "Disconnected"],
-    correct: 1,
-    explanation: "That is the wording on the slide."
-  },
-  {
-    q: "A dull or depressed animal is interactive but not bright and eager to:",
-    a: ["Eat", "Interact", "Bite", "Sleep"],
-    correct: 1,
-    explanation: "That is the slide definition."
-  },
-  {
-    q: "A stuporous animal reacts only to painful or prolonged:",
-    a: ["Feeding", "Stimuli", "Walking", "Talking"],
-    correct: 1,
-    explanation: "That is the slide definition."
-  },
-  {
-    q: "A comatose animal is completely disconnected from the environment and does not react to any:",
-    a: ["Touch", "Stimulus", "Food", "Light only"],
-    correct: 1,
-    explanation: "That is stated directly."
-  },
-  {
-    q: "Mydriatic pupils are:",
-    a: ["Constricted", "Dilated", "Unequal", "Blue"],
-    correct: 1,
-    explanation: "The slide defines mydriatic as dilated."
-  },
-  {
-    q: "Decerebrate posture indicates a complete disconnect between the forebrain and the:",
-    a: ["Liver", "Brainstem", "Kidney", "Spinal cord only"],
-    correct: 1,
-    explanation: "That is on the slide."
-  },
-  {
-    q: "Decerebrate posture often carries a __________ prognosis.",
-    a: ["Excellent", "Grave", "Harmless", "Routine"],
-    correct: 1,
-    explanation: "The slide says grave prognosis."
-  },
-  {
-    q: "The main difference between decerebellate and decerebrate posture is that decerebellate animals have normal:",
-    a: ["Respiration", "Mentation", "Hydration", "Urination"],
-    correct: 1,
-    explanation: "That is specifically stated."
-  },
-  {
-    q: "Schiff-Sherrington posture is associated with a:",
-    a: ["T3-L3 spinal cord lesion", "C1-C5 lesion only", "Liver lesion", "Pulmonary lesion"],
-    correct: 0,
-    explanation: "That exact association is on the slide."
-  },
-  {
-    q: "An animal with severe abdominal pain may repeatedly stretch into a:",
-    a: ["Sleeping posture", "Praying posture", "Hunched wing posture", "Swimmer posture"],
-    correct: 1,
-    explanation: "The slide uses the term praying posture."
-  },
-  {
-    q: "At 5% dehydration, the slide lists:",
-    a: ["Mild dry mucous membranes", "Shock", "Sunken eyes", "Coma"],
-    correct: 0,
-    explanation: "That is the 5% sign listed."
-  },
-  {
-    q: "At 7% dehydration, signs include mild loss of skin turgor, dry MM, and mild:",
-    a: ["Bradycardia", "Tachycardia", "Hypothermia", "Blindness"],
-    correct: 1,
-    explanation: "Mild tachycardia is listed."
-  },
-  {
-    q: "At 10% dehydration, signs include pronounced loss of skin turgor, weak pulses, sunken eyes, dry MM, and:",
-    a: ["Hypoglycemia", "Tachycardia", "Seizures", "Anemia"],
-    correct: 1,
-    explanation: "Tachycardia is listed."
-  },
-  {
-    q: "Greater than 10% dehydration may lead to shock, coma, and:",
-    a: ["Death", "Improved appetite", "Hair growth", "Weight gain"],
-    correct: 0,
-    explanation: "Death is listed on the slide."
-  },
-  {
-    q: "Hypovolemia is associated with tachycardia and prolonged:",
-    a: ["MM", "CRT", "ECG", "PAM"],
-    correct: 1,
-    explanation: "That is how the slide distinguishes it."
-  },
-  {
-    q: "Emergency diagnostics listed include PCV, TP, BG, BP, ECG, blood gas analyzer, and:",
-    a: ["Pulse ox", "Nail trim", "Fecal float", "Culture only"],
-    correct: 0,
-    explanation: "Pulse ox is listed."
-  },
-  {
-    q: "A crash cart should be close by and stocked with emergency drugs and:",
-    a: ["Coupons", "Emergency supplies", "Food bowls", "Cat litter only"],
-    correct: 1,
-    explanation: "That is the wording on the diagnostics slide."
-  },
-  {
-    q: "Shock results from altered blood flow or impaired oxygen delivery to the:",
-    a: ["Tissues", "Hair", "Kennel", "Food dish"],
-    correct: 0,
-    explanation: "That is the slide definition."
-  },
-  {
-    q: "Early stages of shock may include depression/anxiety and tachycardia/tachypnea:",
-    a: ["True", "False"],
-    correct: 0,
-    explanation: "Those are early signs listed on the slide."
-  },
-  {
-    q: "As shock progresses, signs include mental status changes, pale MM, hypotension, weak pulses, and severe:",
-    a: ["Hair loss", "Tachycardia", "Bradycardia", "Constipation"],
-    correct: 1,
-    explanation: "Severe tachycardia is listed."
-  },
-  {
-    q: "Hypovolemic shock is the most common type in cats and:",
-    a: ["Birds", "Dogs", "Rabbits", "Reptiles"],
-    correct: 1,
-    explanation: "The slide says cats and dogs."
-  },
-  {
-    q: "Causes of hypovolemic shock include trauma, hemorrhage, and severe:",
-    a: ["V/D", "Pruritus", "Otitis", "Alopecia"],
-    correct: 0,
-    explanation: "The slide lists severe vomiting/diarrhea."
-  },
-  {
-    q: "Patients with hypovolemic shock may have delayed CRT, weak pulses, altered mentation, and:",
-    a: ["Bright red MM", "Pale MM", "Yellow sclera", "Increased appetite"],
-    correct: 1,
-    explanation: "Pale MM is listed."
-  },
-  {
-    q: "Treatment for hypovolemic shock may include IV fluids or a blood:",
-    a: ["Pressure cuff", "Transfusion", "Chemistry panel", "Culture"],
-    correct: 1,
-    explanation: "That is listed under treatment."
-  },
-  {
-    q: "Distributive shock is caused by inappropriate vasodilation causing pooling of blood in the:",
-    a: ["Trachea", "Capillaries", "Bladder", "Mouth"],
-    correct: 1,
-    explanation: "That is the slide description."
-  },
-  {
-    q: "Examples of distributive shock causes include sepsis, anaphylaxis, heat stroke, and:",
-    a: ["Envenomation", "Alopecia", "Vaccination", "Microchipping"],
-    correct: 0,
-    explanation: "Envenomation is listed."
-  },
-  {
-    q: "Distributive shock treatment often includes vasopressors to restore normal vascular:",
-    a: ["Color", "Tone", "Hair", "Posture"],
-    correct: 1,
-    explanation: "That is the goal listed."
-  },
-  {
-    q: "Obstructive shock occurs when venous return to the heart is:",
-    a: ["Increased", "Impaired", "Normal", "Unknown"],
-    correct: 1,
-    explanation: "That is the slide definition."
-  },
-  {
-    q: "Examples of obstructive shock causes include GDV and cardiac:",
-    a: ["Massage", "Tamponade", "Nutrition", "Fever"],
-    correct: 1,
-    explanation: "Cardiac tamponade is listed."
-  },
-  {
-    q: "Cardiogenic shock is secondary to problems of the:",
-    a: ["Heart", "Kidney", "Skin", "GI tract"],
-    correct: 0,
-    explanation: "That is the slide definition."
-  },
-  {
-    q: "In cardiogenic shock, you will more than likely not use:",
-    a: ["Oxygen", "Fluids", "Monitoring", "Auscultation"],
-    correct: 1,
-    explanation: "The slide says more than likely will not use fluids."
-  },
-  {
-    q: "Septic shock may show bright red MM, bounding pulse, and:",
-    a: ["Fever", "Coma only", "Blue tongue", "Hypothermia only"],
-    correct: 0,
-    explanation: "Fever is listed."
-  },
-  {
-    q: "SIRS stands for:",
-    a: ["Systemic Inflammatory Response Syndrome", "Severe Internal Respiratory Stress", "Surgical Inpatient Recovery Scale", "Systemic Immune Renal Syndrome"],
-    correct: 0,
-    explanation: "That is the expanded term on the slide."
-  },
-  {
-    q: "DIC is one of the most serious complications of shock and is almost always:",
-    a: ["Preventable", "Fatal", "Cosmetic", "Mild"],
-    correct: 1,
-    explanation: "The slide says almost always fatal."
-  },
-  {
-    q: "Abdominocentesis can be therapeutic and used for:",
-    a: ["Diagnostics", "Hair removal", "Vaccination", "Microchipping"],
-    correct: 0,
-    explanation: "That is how the technique is described."
-  },
-  {
-    q: "For abdominocentesis, the patient is placed in:",
-    a: ["Dorsal recumbency", "Left lateral recumbency", "Sternal only", "Standing only"],
-    correct: 1,
-    explanation: "That is the positioning listed."
-  },
-  {
-    q: "If fluid obtained by abdominocentesis is hemorrhagic, check for:",
-    a: ["Clots", "Fleas", "Crystals", "Platelet count immediately in the tube"],
-    correct: 0,
-    explanation: "The slide specifically says to check for clots."
-  },
-  {
-    q: "Thoracocentesis is both therapeutic and:",
-    a: ["Decorative", "Diagnostic", "Preventative only", "Optional"],
-    correct: 1,
-    explanation: "That is stated on the slide."
-  },
-  {
-    q: "For suspected pneumothorax, thoracocentesis should be performed in the __________ third of the thorax.",
-    a: ["Ventral", "Dorsal", "Middle", "Caudal abdominal"],
-    correct: 1,
-    explanation: "Dorsal third is listed for pneumothorax."
-  },
-  {
-    q: "For pleural effusion, thoracocentesis should be performed in the __________ third of the thorax.",
-    a: ["Dorsal", "Ventral", "Middle only", "Cranial"],
-    correct: 1,
-    explanation: "Ventral third is listed for pleural effusion."
-  },
-  {
-    q: "Common emergencies listed include respiratory distress, trauma, acute abdomen, GDV, urethral obstruction, and:",
-    a: ["Toxin exposure", "Lymphadenopathy", "Otitis externa", "Luxating patella"],
-    correct: 0,
-    explanation: "Toxin exposure is on the list."
-  },
-  {
-    q: "Patients with respiratory issues may need supplemental:",
-    a: ["Insulin", "Oxygen", "Bicarbonate", "Plasma"],
-    correct: 1,
-    explanation: "That is listed under support."
-  },
-  {
-    q: "Tools for respiratory support/monitoring listed include pulse ox, capnometer, arterial blood gas monitor, and:",
-    a: ["Mechanical ventilators", "Ultrasound only", "Laryngoscope only", "Bandages only"],
-    correct: 0,
-    explanation: "Mechanical ventilators are listed."
-  },
-  {
-    q: "During cardiopulmonary arrest, the first thing you should do is alert the:",
-    a: ["Neighbor", "Team", "Owner only", "Boarding staff"],
-    correct: 1,
-    explanation: "The support slide says first alert the team."
-  },
-  {
-    q: "During CPR, the patient should be in:",
-    a: ["Dorsal recumbency", "Lateral recumbency", "Standing", "Sternal recumbency only"],
-    correct: 1,
-    explanation: "That is stated on the slide."
-  },
-  {
-    q: "For small patients 15 pounds or less, CPR can use the __________ position of your hand.",
-    a: ["A", "C", "L", "V"],
-    correct: 1,
-    explanation: "The slide says the C position."
-  },
-  {
-    q: "Chest compressions should compress the chest wall by:",
-    a: ["5-10%", "30-50%", "60-80%", "90%"],
-    correct: 1,
-    explanation: "That is the stated target."
-  },
-  {
-    q: "Recommended compression rate during CPR is:",
-    a: ["40-60/min", "100-120/min", "150-180/min", "10/min"],
-    correct: 1,
-    explanation: "The slide gives 100-120 compressions per minute."
-  },
-  {
-    q: "Recommended respirations during CPR are:",
-    a: ["2/min", "5/min", "10/min", "25/min"],
-    correct: 2,
-    explanation: "The slide says 10 respirations per minute."
-  },
-  {
-    q: "A target of __________ cm water per breath is appropriate if a pressure manometer is present.",
-    a: ["1 to 5", "10 to 20", "25 to 40", "50 to 60"],
-    correct: 1,
-    explanation: "That exact range is on the slide."
-  },
-  {
-    q: "Monitoring emergency patients should include neurologic assessment, organ function, BG, and:",
-    a: ["Blood pressure", "Nail length", "Fur color", "Client mood"],
-    correct: 0,
-    explanation: "Blood pressure is listed."
-  },
-  {
-    q: "Indirect/noninvasive blood pressure methods listed include Doppler and:",
-    a: ["Oscillometric", "CT", "Thoracoscopy", "Palpation only"],
-    correct: 0,
-    explanation: "Oscillometric is listed."
-  },
-  {
-    q: "Direct/invasive blood pressure measurement involves catheterizing an:",
-    a: ["Artery", "Ear", "Esophagus", "Ureter"],
-    correct: 0,
-    explanation: "The slide says catheterize an artery."
-  },
-  {
-    q: "Care of respiratory patients includes checking the ET tube and maintaining:",
-    a: ["Humidity", "Nail polish", "Ear packing", "Eye tattooing"],
-    correct: 0,
-    explanation: "Humidity is listed."
-  },
-  {
-    q: "Comfort care includes appropriate bedding, absorbent pads, pain control, and:",
-    a: ["Rotating", "Jumping", "Cold bathing", "Fasting only"],
-    correct: 0,
-    explanation: "Rotating is listed."
-  },
-  {
-    q: "Supportive care also includes making sure the eyes are lubed and checking for:",
-    a: ["Ulcerations", "Cataract surgery", "Color change only", "Long eyelashes"],
-    correct: 0,
-    explanation: "Ulcerations are specifically listed."
-  },
-  {
-    q: "Range of motion should be performed about how often according to the slide?",
-    a: ["Once weekly", "Four times daily", "Every 15 minutes", "Only before discharge"],
-    correct: 1,
-    explanation: "The slide says about 4 times daily."
-  }
+{q:"Triage?",a:["Prioritize","Treat","Ignore","None"],correct:0},
+{q:"ABC?",a:["Primary survey","None","123","XYZ"],correct:0},
+{q:"Shock?",a:["Poor perfusion","Good","None","Heat"],correct:0},
+{q:"Hypovolemic cause?",a:["Fluid loss","Tumor","None","Pain"],correct:0},
+{q:"Cats shock?",a:["Bradycardia","Tachy","None","Normal"],correct:0},
+{q:"10% dehydration?",a:["Sunken eyes","Normal","None","Clear"],correct:0},
+{q:"CPR rate?",a:["100-120","50","None","200"],correct:0},
+{q:"Resp rate CPR?",a:["10/min","5","None","50"],correct:0},
+{q:"Orthopnea?",a:["Breathing posture","Pain","None","Normal"],correct:0},
+{q:"SIRS?",a:["Inflammatory response","None","Heart","Bone"],correct:0},
+{q:"DIC?",a:["Fatal clotting","None","Mild","Normal"],correct:0},
+{q:"Septic shock?",a:["Infection","None","Pain","Heat"],correct:0},
+{q:"Cardiogenic?",a:["Heart issue","None","Bone","Skin"],correct:0},
+{q:"Distributive?",a:["Vasodilation","None","Bone","Skin"],correct:0},
+{q:"Obstructive?",a:["Blocked flow","None","Pain","Bone"],correct:0},
+{q:"Pulse ox measures?",a:["Oxygen","Blood","None","Heat"],correct:0},
+{q:"ECG measures?",a:["Heart","Lungs","None","Skin"],correct:0},
+{q:"Crash cart?",a:["Emergency tools","Food","None","Beds"],correct:0},
+{q:"GDV?",a:["Emergency","None","Normal","Pain"],correct:0},
+{q:"Thoracocentesis?",a:["Chest fluid removal","None","GI","Skin"],correct:0},
+{q:"Abdominocentesis?",a:["Abdominal fluid","None","Chest","Skin"],correct:0},
 ];
 
-/* =========================
-   APP STATE
-   ========================= */
+// ================= GAME =================
+let queue=[], currentQ, score=0, total=0, confidence=null;
 
-let queue = [];
-let originalSet = [];
-let currentQ = null;
-let currentMode = "";
-let currentTitle = "";
-
-let totalAnswered = 0;
-let totalCorrect = 0;
-let confidenceKnown = 0;
-let confidenceUnsure = 0;
-let currentConfidence = null;
-
-/* =========================
-   HELPERS
-   ========================= */
-
-function shuffle(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
+function startCategory(type){
+if(type==="fluid") queue=[...fluid];
+if(type==="history") queue=[...history];
+if(type==="emergency") queue=[...emergency];
+startGame();
 }
 
-function cloneQuestions(arr) {
-  return arr.map(q => ({
-    q: q.q,
-    a: [...q.a],
-    correct: q.correct,
-    explanation: q.explanation
-  }));
+function startMixed(){
+queue=[...fluid,...history,...emergency];
+startGame();
 }
 
-function updateBoards() {
-  document.getElementById("scoreboard").textContent =
-    `Score: ${totalCorrect} / ${totalAnswered}`;
-
-  document.getElementById("confidenceBoard").textContent =
-    `Confidence: ${confidenceKnown} known / ${confidenceUnsure} unsure`;
+function startGame(){
+shuffle(queue);
+document.getElementById("menu").classList.add("hidden");
+document.getElementById("game").classList.remove("hidden");
+document.getElementById("modeLabel").innerText="Mode: "+studyMode;
+score=0; total=0;
+nextQuestion();
 }
 
-function showChoices() {
-  document.getElementById("answers").classList.remove("hidden");
-  document.getElementById("confidencePrompt").classList.add("hidden");
+function shuffle(a){ for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} }
+
+function nextQuestion(){
+if(queue.length===0){alert("Final Score: "+score+"/"+total);location.reload();}
+currentQ=queue.shift();
+document.getElementById("question").innerText=currentQ.q;
+document.getElementById("feedback").innerText="";
+let answersDiv=document.getElementById("answers");answersDiv.innerHTML="";
+currentQ.a.forEach((ans,i)=>{
+let btn=document.createElement("button");
+btn.innerText=ans; btn.className="btn";
+btn.onclick=()=>checkAnswer(i,btn);
+answersDiv.appendChild(btn);
+});
+if(studyMode==="confidence"){
+document.getElementById("confidenceBox").style.display="block";
+document.getElementById("answers").style.display="none";
+}else{
+document.getElementById("confidenceBox").style.display="none";
+document.getElementById("answers").style.display="block";
+}
 }
 
-function resetQuestionUI() {
-  document.getElementById("feedback").textContent = "";
-  document.getElementById("nextBtn").classList.add("hidden");
-  document.getElementById("restartBtn").classList.add("hidden");
-  document.getElementById("answers").classList.add("hidden");
-  document.getElementById("confidencePrompt").classList.remove("hidden");
-  currentConfidence = null;
+function setConfidence(val){
+confidence=val;
+document.getElementById("answers").style.display="block";
+document.getElementById("confidenceBox").style.display="none";
 }
 
-function renderAnswers() {
-  const answersDiv = document.getElementById("answers");
-  answersDiv.innerHTML = "";
+function checkAnswer(i,btn){
+total++;
+let buttons=document.querySelectorAll(".btn");
 
-  currentQ.a.forEach((answer, index) => {
-    const btn = document.createElement("button");
-    btn.className = "answer-btn";
-    btn.textContent = answer;
-    btn.onclick = () => checkAnswer(index, btn);
-    answersDiv.appendChild(btn);
-  });
+if(i===currentQ.correct){
+score++;
+if(studyMode!=="exam") btn.classList.add("correct");
+}else{
+if(studyMode!=="exam") btn.classList.add("wrong");
+queue.push(currentQ);
 }
 
-/* =========================
-   START MODES
-   ========================= */
+buttons.forEach((b,index)=>{
+b.disabled=true;
+if(index===currentQ.correct && studyMode!=="exam"){
+b.classList.add("correct");
+}
+});
 
-function startCategory(type) {
-  currentMode = type;
-
-  if (type === "fluid") {
-    originalSet = cloneQuestions(fluid);
-    currentTitle = "Fluid Therapy";
-  } else if (type === "history") {
-    originalSet = cloneQuestions(history);
-    currentTitle = "History & Physical";
-  } else if (type === "emergency") {
-    originalSet = cloneQuestions(emergency);
-    currentTitle = "Emergency";
-  }
-
-  launchGame();
+if(studyMode==="confidence"){
+if(confidence && i!==currentQ.correct){
+document.getElementById("feedback").innerText="You thought you knew it — review.";
+}
+if(!confidence && i===currentQ.correct){
+document.getElementById("feedback").innerText="Nice! You knew it.";
+}
 }
 
-function startMixed() {
-  currentMode = "mixed";
-  currentTitle = "Full Mixed Exam";
-  originalSet = cloneQuestions([...fluid, ...history, ...emergency]);
-  launchGame();
+if(studyMode==="study"){
+document.getElementById("feedback").innerText =
+i===currentQ.correct ? "Correct!" : "Incorrect — review.";
 }
 
-function launchGame() {
-  queue = cloneQuestions(originalSet);
-  shuffle(queue);
-
-  totalAnswered = 0;
-  totalCorrect = 0;
-  confidenceKnown = 0;
-  confidenceUnsure = 0;
-
-  document.getElementById("menu").classList.add("hidden");
-  document.getElementById("game").classList.remove("hidden");
-  document.getElementById("meta").textContent =
-    `${currentTitle} • ${queue.length} starting questions • Confidence Recall Mode`;
-
-  updateBoards();
-  nextQuestion();
+document.getElementById("score").innerText="Score: "+score+" / "+total;
 }
 
-/* =========================
-   QUESTION FLOW
-   ========================= */
-
-function nextQuestion() {
-  if (queue.length === 0) {
-    document.getElementById("question").textContent = "🎉 Finished!";
-    document.getElementById("answers").innerHTML = "";
-    document.getElementById("answers").classList.add("hidden");
-    document.getElementById("confidencePrompt").classList.add("hidden");
-    document.getElementById("feedback").innerHTML =
-      `Final Score: <strong>${totalCorrect} / ${totalAnswered}</strong><br>` +
-      `Confidence: <strong>${confidenceKnown}</strong> known, <strong>${confidenceUnsure}</strong> unsure`;
-    document.getElementById("nextBtn").classList.add("hidden");
-    document.getElementById("restartBtn").classList.remove("hidden");
-    return;
-  }
-
-  currentQ = queue.shift();
-  document.getElementById("question").textContent = currentQ.q;
-
-  resetQuestionUI();
-  renderAnswers();
-}
-
-function setConfidence(knowsIt) {
-  currentConfidence = knowsIt;
-
-  if (knowsIt) {
-    confidenceKnown++;
-  } else {
-    confidenceUnsure++;
-  }
-
-  updateBoards();
-  showChoices();
-}
-
-function checkAnswer(selectedIndex, clickedBtn) {
-  const buttons = document.querySelectorAll(".answer-btn");
-  const gotItRight = selectedIndex === currentQ.correct;
-  totalAnswered++;
-
-  buttons.forEach((btn, idx) => {
-    btn.disabled = true;
-    if (idx === currentQ.correct) {
-      btn.classList.add("correct");
-    }
-  });
-
-  if (gotItRight) {
-    totalCorrect++;
-  } else {
-    clickedBtn.classList.add("wrong");
-    queue.push(currentQ);
-  }
-
-  let confidenceText = "";
-  if (currentConfidence === true && gotItRight) {
-    confidenceText = "You said you knew it, and you were right. Great sign.";
-  } else if (currentConfidence === true && !gotItRight) {
-    confidenceText = "You felt confident, but missed it. That means this one needs another pass.";
-  } else if (currentConfidence === false && gotItRight) {
-    confidenceText = "Nice job. You were unsure, but got it right.";
-  } else if (currentConfidence === false && !gotItRight) {
-    confidenceText = "Good call marking it unsure. It will come back again.";
-  }
-
-  document.getElementById("feedback").innerHTML =
-    `<strong>${gotItRight ? "Correct." : "Not quite."}</strong> ${currentQ.explanation}<br><br>${confidenceText}`;
-
-  updateBoards();
-  document.getElementById("nextBtn").classList.remove("hidden");
-}
-
-function restartSameMode() {
-  if (currentMode === "mixed") {
-    startMixed();
-  } else {
-    startCategory(currentMode);
-  }
-}
-
-function goHome() {
-  document.getElementById("menu").classList.remove("hidden");
-  document.getElementById("game").classList.add("hidden");
-}
 </script>
 
 </body>

@@ -5,14 +5,43 @@
 <title>Vet Tech Trainer PRO</title>
 
 <style>
-body { font-family: Arial; max-width: 800px; margin: 40px auto; text-align: center; }
-button { padding: 12px; margin: 6px; border-radius: 8px; border: none; cursor: pointer; }
-.btn { display: block; width: 100%; background: #eee; margin: 8px 0; }
+body {
+  font-family: Arial;
+  max-width: 800px;
+  margin: 40px auto;
+  text-align: center;
+}
+
+button {
+  padding: 12px;
+  margin: 6px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn {
+  display: block;
+  width: 100%;
+  background: #eee;
+  margin: 8px 0;
+}
+
 .correct { background: #4CAF50; color: white; }
 .wrong { background: #f44336; color: white; }
+
 .hidden { display: none; }
-#question { font-size: 22px; margin: 20px 0; }
-#score { margin: 10px; font-weight: bold; }
+
+#question {
+  font-size: 22px;
+  margin: 20px 0;
+  white-space: pre-line;
+}
+
+#score {
+  margin: 10px;
+  font-weight: bold;
+}
 </style>
 </head>
 
@@ -22,15 +51,15 @@ button { padding: 12px; margin: 6px; border-radius: 8px; border: none; cursor: p
 
 <div id="menu">
   <h2>Step 1: Choose Mode</h2>
-  <button onclick="setMode('confidence')">🧠 Confidence</button>
-  <button onclick="setMode('study')">📚 Study</button>
-  <button onclick="setMode('exam')">🧪 Exam</button>
+  <button onclick="setMode('confidence')">🧠 Confidence Mode</button>
+  <button onclick="setMode('study')">📚 Study Mode</button>
+  <button onclick="setMode('exam')">🧪 Exam Mode</button>
 
   <h2>Step 2: Choose Topic</h2>
   <button onclick="startCategory('fluid')">Fluid Therapy</button>
-  <button onclick="startCategory('history')">History & PE</button>
+  <button onclick="startCategory('history')">History & Physical</button>
   <button onclick="startCategory('emergency')">Emergency</button>
-  <button onclick="startMixed()">🔥 Full Exam</button>
+  <button onclick="startMixed()">🔥 Full Exam (Mixed)</button>
 </div>
 
 <div id="game" class="hidden">
@@ -48,175 +77,168 @@ button { padding: 12px; margin: 6px; border-radius: 8px; border: none; cursor: p
   <div id="feedback"></div>
 
   <button onclick="nextQuestion()">Next</button>
+  <button onclick="goHome()">🏠 Home</button>
 </div>
 
 <script>
 
-// MODE
+// ================= MODE =================
 let studyMode = "confidence";
-function setMode(m){ studyMode = m; alert("Mode: "+m); }
 
-// ================= QUESTION BANK (~100) =================
+function setMode(m){
+  studyMode = m;
+  alert("Mode set to: " + m);
+}
 
-const fluid = [
-{q:"Body is ~ what % water?",a:["30","45","60","80"],correct:2},
-{q:"TBW stands for?",a:["Total body water","Total blood weight","None","Fluid weight"],correct:0},
-{q:"ICF?",a:["Intracellular fluid","Internal flow","None","In cell flow"],correct:0},
-{q:"ECF?",a:["Extracellular fluid","External cell force","None","Extra flow"],correct:0},
-{q:"Hypotonic fluids?",a:["More water","More electrolytes","Equal","None"],correct:0},
-{q:"Treat hypernatremia?",a:["Hypotonic","Isotonic","Hypertonic","None"],correct:0},
-{q:"Isotonic example?",a:["0.9% NaCl","3% NaCl","0.45% NaCl","None"],correct:0},
-{q:"LRS type?",a:["Isotonic","Hypotonic","Hypertonic","Colloid"],correct:0},
-{q:"Hypertonic used for?",a:["Head trauma","Skin","Bone","None"],correct:0},
-{q:"Colloids remain where?",a:["Vascular","Cells","GI","Bone"],correct:0},
-{q:"Resuscitation phase goal?",a:["Restore volume","Feed","Sedate","None"],correct:0},
-{q:"Replacement phase?",a:["Correct dehydration","Pain","None","Heat"],correct:0},
-{q:"Maintenance phase?",a:["Stable patients","Shock","Trauma","None"],correct:0},
-{q:"IV route used for?",a:["Critical patients","Mild","None","Home"],correct:0},
-{q:"SQ fluids?",a:["Mild dehydration","Shock","None","Surgery"],correct:0},
-{q:"IO route?",a:["When IV not possible","Always","Never","None"],correct:0},
-{q:"Enteral route needs?",a:["GI function","Shock","None","Pain"],correct:0},
-{q:"Potassium for?",a:["Hypokalemia","Hyper","None","Pain"],correct:0},
-{q:"Dextrose for?",a:["Hypoglycemia","Hyperglycemia","None","Shock"],correct:0},
-{q:"Biggest risk fluid therapy?",a:["Overload","Pain","None","Heat"],correct:0},
-];
+// ================= QUESTIONS =================
 
-// HISTORY (30)
-const history = [
-{q:"First step?",a:["Introduce yourself","Treat","Weigh","None"],correct:0},
-{q:"Signalment includes?",a:["Name, age, breed","Only age","Only name","None"],correct:0},
-{q:"Open questions?",a:["Yes","No","None","Short"],correct:0},
-{q:"First diagnostic?",a:["Physical exam","X-ray","None","Blood"],correct:0},
-{q:"Otoscope?",a:["Ear","Eye","Heart","None"],correct:0},
-{q:"Entropion?",a:["Inward lid","Outward","None","Pain"],correct:0},
-{q:"Ectropion?",a:["Outward lid","Inward","None","Pain"],correct:0},
-{q:"CRT?",a:["Capillary refill time","Cardiac","None","Flow"],correct:0},
-{q:"PAM valves?",a:["Heart valves","Lungs","None","Brain"],correct:0},
-{q:"Normal lymph nodes?",a:["Soft movable","Hard","None","Hot"],correct:0},
-{q:"Stertor?",a:["Snore","Wheeze","None","Pain"],correct:0},
-{q:"Stridor?",a:["High wheeze","Low","None","Pain"],correct:0},
-{q:"GI exam?",a:["Palpate organs","Look","None","Ignore"],correct:0},
-{q:"Anal glands?",a:["5 & 7 o’clock","12","None","3"],correct:0},
-{q:"Skin abnormal?",a:["Greasy","Shiny","None","Smooth"],correct:0},
-{q:"Musculoskeletal?",a:["Pain & lameness","None","Hair","Eyes"],correct:0},
-{q:"Nervous exam?",a:["Reflexes","None","Hair","Eyes"],correct:0},
-{q:"Anisocoria?",a:["Unequal pupils","Equal","None","Pain"],correct:0},
-{q:"Eye tool?",a:["Ophthalmoscope","Otoscope","None","Scope"],correct:0},
-{q:"MM color checks?",a:["Perfusion","Hair","None","Skin"],correct:0},
-];
-
-// EMERGENCY (~50)
-const emergency = [
-{q:"Triage?",a:["Prioritize","Treat","Ignore","None"],correct:0},
-{q:"ABC?",a:["Primary survey","None","123","XYZ"],correct:0},
-{q:"Shock?",a:["Poor perfusion","Good","None","Heat"],correct:0},
-{q:"Hypovolemic cause?",a:["Fluid loss","Tumor","None","Pain"],correct:0},
-{q:"Cats shock?",a:["Bradycardia","Tachy","None","Normal"],correct:0},
-{q:"10% dehydration?",a:["Sunken eyes","Normal","None","Clear"],correct:0},
-{q:"CPR rate?",a:["100-120","50","None","200"],correct:0},
-{q:"Resp rate CPR?",a:["10/min","5","None","50"],correct:0},
-{q:"Orthopnea?",a:["Breathing posture","Pain","None","Normal"],correct:0},
-{q:"SIRS?",a:["Inflammatory response","None","Heart","Bone"],correct:0},
-{q:"DIC?",a:["Fatal clotting","None","Mild","Normal"],correct:0},
-{q:"Septic shock?",a:["Infection","None","Pain","Heat"],correct:0},
-{q:"Cardiogenic?",a:["Heart issue","None","Bone","Skin"],correct:0},
-{q:"Distributive?",a:["Vasodilation","None","Bone","Skin"],correct:0},
-{q:"Obstructive?",a:["Blocked flow","None","Pain","Bone"],correct:0},
-{q:"Pulse ox measures?",a:["Oxygen","Blood","None","Heat"],correct:0},
-{q:"ECG measures?",a:["Heart","Lungs","None","Skin"],correct:0},
-{q:"Crash cart?",a:["Emergency tools","Food","None","Beds"],correct:0},
-{q:"GDV?",a:["Emergency","None","Normal","Pain"],correct:0},
-{q:"Thoracocentesis?",a:["Chest fluid removal","None","GI","Skin"],correct:0},
-{q:"Abdominocentesis?",a:["Abdominal fluid","None","Chest","Skin"],correct:0},
+const questions = [
+{q:"The maintenance phase of fluid therapy is used for:",a:["Stable patients","Shock patients","Trauma patients","None"],correct:0},
+{q:"Total body water makes up approximately what percentage of the body?",a:["30%","45%","60%","80%"],correct:2},
+{q:"ICF stands for:",a:["Intracellular fluid","Internal cell force","Increased cardiac flow","None"],correct:0},
+{q:"ECF stands for:",a:["Extracellular fluid","External cardiac function","Electrolyte control fluid","None"],correct:0},
+{q:"Which fluid type is used to treat hypernatremia?",a:["Hypotonic fluids","Isotonic fluids","Hypertonic fluids","Colloids"],correct:0},
+{q:"Which is an example of an isotonic fluid?",a:["0.9% NaCl","3% NaCl","0.45% NaCl","Dextrose only"],correct:0},
+{q:"Lactated Ringers Solution (LRS) is classified as:",a:["Isotonic","Hypotonic","Hypertonic","Colloid"],correct:0},
+{q:"Hypertonic fluids are commonly used for:",a:["Head trauma","Mild dehydration","Maintenance","Skin issues"],correct:0},
+{q:"Colloids primarily remain in which space?",a:["Vascular space","Intracellular space","GI tract","Bone"],correct:0},
+{q:"The resuscitation phase is used to:",a:["Restore vascular volume","Maintain hydration","Feed the patient","Reduce pain"],correct:0},
+{q:"Which tool is used to examine the ears?",a:["Otoscope","Ophthalmoscope","Stethoscope","Endoscope"],correct:0},
+{q:"Capillary refill time (CRT) is used to assess:",a:["Perfusion","Respiration","Digestion","Temperature"],correct:0},
+{q:"Entropion refers to:",a:["Inward rolling eyelid","Outward rolling eyelid","Eye infection","Blindness"],correct:0},
+{q:"Triage is best defined as:",a:["Prioritizing patients","Treating patients","Ignoring minor cases","None"],correct:0},
+{q:"Shock results in:",a:["Poor tissue perfusion","High oxygen levels","Normal circulation","None"],correct:0},
+{q:"Cats in shock often present with:",a:["Bradycardia","Tachycardia","Normal heart rate","None"],correct:0},
+{q:"Orthopnea refers to:",a:["Posture to help breathing","Pain posture","Normal stance","None"],correct:0},
+{q:"The primary survey follows which sequence?",a:["ABC","XYZ","123","None"],correct:0},
+{q:"CPR compression rate should be:",a:["100-120 per minute","50 per minute","200 per minute","10 per minute"],correct:0},
+{q:"Which is considered a common emergency?",a:["All listed","GDV","Trauma","Toxin exposure"],correct:0}
 ];
 
 // ================= GAME =================
-let queue=[], currentQ, score=0, total=0, confidence=null;
 
-function startCategory(type){
-if(type==="fluid") queue=[...fluid];
-if(type==="history") queue=[...history];
-if(type==="emergency") queue=[...emergency];
-startGame();
+let queue = [];
+let currentQ;
+let score = 0;
+let total = 0;
+let questionNumber = 0;
+let totalQuestions = 0;
+let confidence = null;
+
+function startCategory(){
+  queue = [...questions];
+  startGame();
 }
 
 function startMixed(){
-queue=[...fluid,...history,...emergency];
-startGame();
+  queue = [...questions];
+  startGame();
 }
 
 function startGame(){
-shuffle(queue);
-document.getElementById("menu").classList.add("hidden");
-document.getElementById("game").classList.remove("hidden");
-document.getElementById("modeLabel").innerText="Mode: "+studyMode;
-score=0; total=0;
-nextQuestion();
+  shuffle(queue);
+
+  totalQuestions = queue.length;
+  questionNumber = 0;
+
+  document.getElementById("menu").classList.add("hidden");
+  document.getElementById("game").classList.remove("hidden");
+
+  document.getElementById("modeLabel").innerText = "Mode: " + studyMode;
+
+  score = 0;
+  total = 0;
+
+  nextQuestion();
 }
 
-function shuffle(a){ for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} }
+function shuffle(a){
+  for(let i=a.length-1;i>0;i--){
+    let j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+}
 
 function nextQuestion(){
-if(queue.length===0){alert("Final Score: "+score+"/"+total);location.reload();}
-currentQ=queue.shift();
-document.getElementById("question").innerText=currentQ.q;
-document.getElementById("feedback").innerText="";
-let answersDiv=document.getElementById("answers");answersDiv.innerHTML="";
-currentQ.a.forEach((ans,i)=>{
-let btn=document.createElement("button");
-btn.innerText=ans; btn.className="btn";
-btn.onclick=()=>checkAnswer(i,btn);
-answersDiv.appendChild(btn);
-});
-if(studyMode==="confidence"){
-document.getElementById("confidenceBox").style.display="block";
-document.getElementById("answers").style.display="none";
-}else{
-document.getElementById("confidenceBox").style.display="none";
-document.getElementById("answers").style.display="block";
-}
+
+  if(queue.length===0){
+    alert("Final Score: "+score+"/"+total);
+    location.reload();
+  }
+
+  currentQ = queue.shift();
+  questionNumber++;
+
+  document.getElementById("question").innerText =
+    "Question " + questionNumber + " of " + totalQuestions + "\n\n" + currentQ.q;
+
+  document.getElementById("feedback").innerText = "";
+
+  let answersDiv = document.getElementById("answers");
+  answersDiv.innerHTML = "";
+
+  // SHUFFLE ANSWERS
+  let shuffled = currentQ.a.map((ans,i)=>({
+    ans,
+    correct: i===currentQ.correct
+  })).sort(()=>Math.random()-0.5);
+
+  shuffled.forEach(item=>{
+    let btn = document.createElement("button");
+    btn.innerText = item.ans;
+    btn.className = "btn";
+    btn.onclick = ()=>checkAnswer(item.correct, btn);
+    answersDiv.appendChild(btn);
+  });
+
+  if(studyMode==="confidence"){
+    document.getElementById("confidenceBox").style.display="block";
+    document.getElementById("answers").style.display="none";
+  } else {
+    document.getElementById("confidenceBox").style.display="none";
+    document.getElementById("answers").style.display="block";
+  }
 }
 
 function setConfidence(val){
-confidence=val;
-document.getElementById("answers").style.display="block";
-document.getElementById("confidenceBox").style.display="none";
+  confidence = val;
+  document.getElementById("answers").style.display="block";
+  document.getElementById("confidenceBox").style.display="none";
 }
 
-function checkAnswer(i,btn){
-total++;
-let buttons=document.querySelectorAll(".btn");
+function checkAnswer(isCorrect, btn){
 
-if(i===currentQ.correct){
-score++;
-if(studyMode!=="exam") btn.classList.add("correct");
-}else{
-if(studyMode!=="exam") btn.classList.add("wrong");
-queue.push(currentQ);
-}
+  total++;
 
-buttons.forEach((b,index)=>{
-b.disabled=true;
-if(index===currentQ.correct && studyMode!=="exam"){
-b.classList.add("correct");
-}
-});
+  let buttons = document.querySelectorAll(".btn");
 
-if(studyMode==="confidence"){
-if(confidence && i!==currentQ.correct){
-document.getElementById("feedback").innerText="You thought you knew it — review.";
-}
-if(!confidence && i===currentQ.correct){
-document.getElementById("feedback").innerText="Nice! You knew it.";
-}
-}
+  if(isCorrect){
+    score++;
+    if(studyMode!=="exam") btn.classList.add("correct");
+  } else {
+    if(studyMode!=="exam") btn.classList.add("wrong");
+    queue.push(currentQ);
+  }
 
-if(studyMode==="study"){
-document.getElementById("feedback").innerText =
-i===currentQ.correct ? "Correct!" : "Incorrect — review.";
+  if(studyMode!=="exam"){
+    buttons.forEach(b=>{
+      if(b.onclick.toString().includes("true")){
+        b.classList.add("correct");
+      }
+    });
+  }
+
+  if(studyMode==="study"){
+    document.getElementById("feedback").innerText =
+      isCorrect ? "Correct!" : "Incorrect — review.";
+  }
+
+  document.getElementById("score").innerText =
+    "Score: "+score+" / "+total;
 }
 
-document.getElementById("score").innerText="Score: "+score+" / "+total;
+function goHome(){
+  location.reload();
 }
 
 </script>

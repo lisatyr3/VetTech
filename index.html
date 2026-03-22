@@ -6,7 +6,7 @@
 
 <style>
 body { font-family: Arial; max-width: 800px; margin: 40px auto; text-align: center; }
-button { padding: 12px; margin: 6px; border-radius: 8px; border: none; cursor: pointer; }
+button { padding: 12px; margin: 6px; border-radius: 10px; border: none; cursor: pointer; }
 .btn { display: block; width: 100%; background: #eee; margin: 8px 0; }
 .correct { background: #4CAF50; color: white; }
 .wrong { background: #f44336; color: white; }
@@ -21,13 +21,18 @@ button { padding: 12px; margin: 6px; border-radius: 8px; border: none; cursor: p
 <h1>Vet Tech Trainer</h1>
 
 <div id="menu">
-  <h2>Step 1: Choose Mode</h2>
-  <button onclick="setMode('confidence')">🧠 Confidence Mode</button>
-  <button onclick="setMode('study')">📚 Study Mode</button>
-  <button onclick="setMode('exam')">🧪 Exam Mode</button>
 
-  <h2>Step 2: Start</h2>
-  <button onclick="startGame()">Start Quiz</button>
+  <h2>Step 1: Choose Mode</h2>
+  <button onclick="setMode('confidence')">🧠 Confidence</button>
+  <button onclick="setMode('study')">📚 Study</button>
+  <button onclick="setMode('exam')">🧪 Exam</button>
+
+  <h2>Step 2: Choose Category</h2>
+  <button onclick="startCategory('fluid')">Fluid Therapy</button>
+  <button onclick="startCategory('history')">History & Physical</button>
+  <button onclick="startCategory('emergency')">Emergency</button>
+  <button onclick="startMixed()">🔥 Full Exam</button>
+
 </div>
 
 <div id="game" class="hidden">
@@ -50,78 +55,116 @@ button { padding: 12px; margin: 6px; border-radius: 8px; border: none; cursor: p
 
 <script>
 
+// ================= MODE =================
 let studyMode = "confidence";
 function setMode(m){ studyMode = m; alert("Mode: "+m); }
 
-// ================= 75 REAL QUESTIONS =================
+// ================= QUESTION BANK =================
 
-const questions = [
-
+// FLUID (25)
+const fluid = [
 {q:"The maintenance phase of fluid therapy is used for:",a:["Stable patients","Shock patients","Trauma patients","Emergency resuscitation"],correct:0},
-{q:"Total body water makes up approximately what percentage of body weight?",a:["30%","45%","60%","80%"],correct:2},
-{q:"Intracellular fluid (ICF) refers to fluid located:",a:["Inside cells","Outside cells","In blood vessels","In GI tract"],correct:0},
-{q:"Extracellular fluid (ECF) is located:",a:["Outside cells","Inside cells","Only in bone","Only in lungs"],correct:0},
-{q:"Hypotonic fluids are used to treat:",a:["Hypernatremia","Shock","Hemorrhage","Hypothermia"],correct:0},
-{q:"Which fluid is isotonic?",a:["0.9% NaCl","3% NaCl","0.45% NaCl","Distilled water"],correct:0},
-{q:"Lactated Ringer’s Solution is classified as:",a:["Isotonic","Hypotonic","Hypertonic","Colloid"],correct:0},
-{q:"Hypertonic fluids are most commonly used for:",a:["Head trauma","Mild dehydration","Routine maintenance","Skin disease"],correct:0},
-{q:"Colloids primarily expand which space?",a:["Vascular space","Intracellular space","GI tract","Bone"],correct:0},
-{q:"The resuscitation phase focuses on:",a:["Restoring circulating volume","Long-term hydration","Nutrition","Pain control"],correct:0},
+{q:"Total body water makes up approximately what percentage?",a:["30%","45%","60%","80%"],correct:2},
+{q:"Intracellular fluid (ICF) refers to fluid located:",a:["Inside cells","Outside cells","In blood vessels","GI tract"],correct:0},
+{q:"Extracellular fluid (ECF) is located:",a:["Outside cells","Inside cells","Only bone","Only lungs"],correct:0},
+{q:"Hypotonic fluids treat:",a:["Hypernatremia","Shock","Hemorrhage","Pain"],correct:0},
+{q:"Which is isotonic?",a:["0.9% NaCl","3% NaCl","0.45% NaCl","Distilled water"],correct:0},
+{q:"LRS is:",a:["Isotonic","Hypotonic","Hypertonic","Colloid"],correct:0},
+{q:"Hypertonic fluids are used for:",a:["Head trauma","Mild dehydration","Maintenance","Skin issues"],correct:0},
+{q:"Colloids expand:",a:["Vascular space","Cells","GI","Bone"],correct:0},
+{q:"Resuscitation phase goal:",a:["Restore volume","Feed","Pain control","None"],correct:0},
+{q:"Replacement phase corrects:",a:["Dehydration","Pain","Infection","Temperature"],correct:0},
+{q:"Maintenance phase supports:",a:["Normal hydration","Shock","Trauma","Blood loss"],correct:0},
+{q:"IV fluids are used for:",a:["Critical patients","Mild dehydration","Skin issues","Behavior"],correct:0},
+{q:"SQ fluids are used for:",a:["Mild dehydration","Shock","CPR","Trauma"],correct:0},
+{q:"Enteral fluids require:",a:["Working GI tract","Shock","Trauma","None"],correct:0},
+{q:"Dextrose treats:",a:["Hypoglycemia","Hyperglycemia","Shock","Pain"],correct:0},
+{q:"Potassium treats:",a:["Hypokalemia","Hyperkalemia","Anemia","Pain"],correct:0},
+{q:"Fluid overload can cause:",a:["Pulmonary edema","Better breathing","Weight loss","None"],correct:0},
+{q:"Isotonic fluids distribute where?",a:["ECF","ICF","Bone","Cells only"],correct:0},
+{q:"Hypotonic fluids move water:",a:["Into cells","Out of cells","Nowhere","Bone"],correct:0},
+{q:"Hypertonic fluids pull water:",a:["Out of cells","Into cells","None","Bone"],correct:0},
+{q:"Colloids contain:",a:["Large molecules","Electrolytes only","Water only","None"],correct:0},
+{q:"Primary risk of fluids:",a:["Overload","Pain","Hair loss","None"],correct:0},
+{q:"Maintenance fluid rate is for:",a:["Stable patients","Shock","CPR","Bleeding"],correct:0},
+{q:"Fluid therapy goal:",a:["Restore balance","Cause dehydration","None","Weight loss"],correct:0}
+];
 
-{q:"The first step when taking a patient history is to:",a:["Introduce yourself","Perform surgery","Take blood","Weigh patient"],correct:0},
-{q:"Signalment includes:",a:["Age, breed, sex","Only age","Only breed","Only weight"],correct:0},
-{q:"Open-ended questions help to:",a:["Gather more detailed information","Limit responses","Save time","Avoid discussion"],correct:0},
-{q:"The most important first diagnostic test is:",a:["Physical exam","X-ray","MRI","Blood panel"],correct:0},
-{q:"An otoscope is used to examine the:",a:["Ears","Eyes","Heart","Skin"],correct:0},
-{q:"An ophthalmoscope is used to examine the:",a:["Eyes","Ears","Lungs","Abdomen"],correct:0},
-{q:"Entropion refers to:",a:["Inward rolling eyelid","Outward eyelid","Swelling","Blindness"],correct:0},
-{q:"Ectropion refers to:",a:["Outward eyelid","Inward eyelid","Swelling","Pain"],correct:0},
-{q:"Capillary refill time evaluates:",a:["Perfusion","Respiration","Digestion","Temperature"],correct:0},
-{q:"Normal lymph nodes are:",a:["Soft and movable","Hard and fixed","Painful","Hot"],correct:0},
+// HISTORY (25)
+const history = [
+{q:"First step in history:",a:["Introduce yourself","Treat","Weigh","Ignore"],correct:0},
+{q:"Signalment includes:",a:["Age, breed, sex","Only age","Only weight","Only name"],correct:0},
+{q:"Open-ended questions:",a:["Encourage detail","Limit answers","Confuse","None"],correct:0},
+{q:"First diagnostic:",a:["Physical exam","X-ray","MRI","Blood"],correct:0},
+{q:"Otoscope examines:",a:["Ears","Eyes","Heart","Skin"],correct:0},
+{q:"Ophthalmoscope examines:",a:["Eyes","Ears","Skin","Bone"],correct:0},
+{q:"Entropion:",a:["Inward eyelid","Outward","Swelling","None"],correct:0},
+{q:"Ectropion:",a:["Outward eyelid","Inward","Swelling","None"],correct:0},
+{q:"CRT assesses:",a:["Perfusion","Respiration","Digestion","Temp"],correct:0},
+{q:"Normal lymph nodes:",a:["Soft & movable","Hard","Hot","Painful"],correct:0},
+{q:"Stertor:",a:["Low snoring sound","High wheeze","None","Normal"],correct:0},
+{q:"Stridor:",a:["High wheeze","Low sound","None","Normal"],correct:0},
+{q:"Mucous membranes assess:",a:["Perfusion","Vision","Hearing","Skin"],correct:0},
+{q:"Pale gums indicate:",a:["Poor perfusion","Good oxygen","Normal","None"],correct:0},
+{q:"GI exam includes:",a:["Palpation","Eye exam","Ear exam","None"],correct:0},
+{q:"Anal glands location:",a:["5 & 7 o’clock","12","3","9"],correct:0},
+{q:"Musculoskeletal exam:",a:["Pain/lameness","Eyes","Ears","Skin"],correct:0},
+{q:"Neurologic exam:",a:["Reflexes","Hair","Skin","Eyes"],correct:0},
+{q:"Anisocoria:",a:["Unequal pupils","Equal pupils","None","Pain"],correct:0},
+{q:"Heart auscultation:",a:["Listen valves","Look eyes","None","Skin"],correct:0},
+{q:"Resp exam checks:",a:["Breathing","Skin","Hair","None"],correct:0},
+{q:"Normal MM color:",a:["Pink","Blue","White","Green"],correct:0},
+{q:"Capillary refill normal:",a:["<2 seconds",">5 seconds","None","10 sec"],correct:0},
+{q:"Hydration check:",a:["Skin tent","Eyes","Ears","Nose"],correct:0},
+{q:"History purpose:",a:["Gather info","Treat","Ignore","None"],correct:0}
+];
 
-{q:"Triage is the process of:",a:["Prioritizing patients","Treating all immediately","Ignoring minor cases","Discharging patients"],correct:0},
-{q:"The primary survey follows which sequence?",a:["ABC","XYZ","123","CAB"],correct:0},
-{q:"Shock results in:",a:["Poor tissue perfusion","High oxygen delivery","Normal circulation","None"],correct:0},
-{q:"Hypovolemic shock is caused by:",a:["Fluid loss","Tumor","Infection","Pain"],correct:0},
-{q:"Cats in shock often present with:",a:["Bradycardia","Tachycardia","Normal HR","Hypertension"],correct:0},
-{q:"Orthopnea describes:",a:["A posture to ease breathing","Pain posture","Normal stance","Walking abnormality"],correct:0},
-{q:"CPR chest compression rate should be:",a:["100-120 per minute","50 per minute","200 per minute","10 per minute"],correct:0},
-{q:"CPR breathing rate should be:",a:["10 breaths per minute","5 per minute","25 per minute","50 per minute"],correct:0},
-{q:"A pulse oximeter measures:",a:["Oxygen saturation","Blood pressure","Temperature","Glucose"],correct:0},
-{q:"A crash cart is used for:",a:["Emergency equipment","Routine exams","Grooming tools","Surgery prep"],correct:0},
-
-{q:"Mucous membrane color is used to assess:",a:["Perfusion","Vision","Hearing","Digestion"],correct:0},
-{q:"Pale mucous membranes indicate:",a:["Poor perfusion","Good oxygenation","Normal status","High blood pressure"],correct:0},
-{q:"Tachycardia means:",a:["Fast heart rate","Slow heart rate","Irregular rhythm","No pulse"],correct:0},
-{q:"Bradycardia means:",a:["Slow heart rate","Fast heart rate","Normal heart rate","Irregular pulse"],correct:0},
-{q:"Stridor is:",a:["High-pitched breathing sound","Low snoring sound","Normal breathing","Silent breathing"],correct:0},
-{q:"Stertor is:",a:["Low snoring sound","High wheeze","Silent breathing","Normal respiration"],correct:0},
-
-{q:"The GI exam includes:",a:["Palpation of organs","Eye exam","Ear exam","Neurologic exam"],correct:0},
-{q:"Anal glands are located at:",a:["5 and 7 o’clock","12 o’clock","3 o’clock","9 o’clock"],correct:0},
-{q:"Musculoskeletal exam checks:",a:["Pain and lameness","Vision","Hearing","Digestion"],correct:0},
-{q:"Neurologic exam includes:",a:["Reflexes","Skin condition","Hair coat","Temperature"],correct:0},
-
-{q:"Septic shock is caused by:",a:["Infection","Trauma","Fluid loss","Pain"],correct:0},
-{q:"Cardiogenic shock results from:",a:["Heart failure","Kidney disease","Skin disease","GI disease"],correct:0},
-{q:"Distributive shock involves:",a:["Vasodilation","Fluid overload","Bone damage","Muscle injury"],correct:0},
-{q:"Obstructive shock occurs when:",a:["Blood flow is blocked","Blood pressure rises","Fluid increases","Temperature rises"],correct:0},
-
-{q:"Dehydration of 10% often shows:",a:["Sunken eyes","Normal appearance","Weight gain","Clear eyes"],correct:0},
-{q:"Severe dehydration may lead to:",a:["Shock","Improved circulation","Increased appetite","Normal hydration"],correct:0},
-
-{q:"Dextrose is added to fluids for:",a:["Hypoglycemia","Hyperglycemia","Pain","Anemia"],correct:0},
-{q:"Potassium is supplemented in:",a:["Hypokalemia","Hyperkalemia","Shock","Anemia"],correct:0},
-{q:"Fluid overload may cause:",a:["Pulmonary edema","Improved breathing","Weight loss","Normal function"],correct:0}
-
+// EMERGENCY (25)
+const emergency = [
+{q:"Triage means:",a:["Prioritize","Treat all","Ignore","None"],correct:0},
+{q:"Primary survey:",a:["ABC","XYZ","123","CAB"],correct:0},
+{q:"Shock is:",a:["Poor perfusion","Good flow","None","Heat"],correct:0},
+{q:"Hypovolemic shock:",a:["Fluid loss","Tumor","Pain","None"],correct:0},
+{q:"Cats in shock:",a:["Bradycardia","Tachy","Normal","None"],correct:0},
+{q:"Orthopnea:",a:["Breathing posture","Pain","None","Normal"],correct:0},
+{q:"CPR compressions:",a:["100-120","50","200","10"],correct:0},
+{q:"CPR breaths:",a:["10/min","5","20","50"],correct:0},
+{q:"Pulse ox measures:",a:["Oxygen","BP","Temp","Glucose"],correct:0},
+{q:"Crash cart:",a:["Emergency tools","Food","None","Beds"],correct:0},
+{q:"Septic shock:",a:["Infection","Trauma","Pain","None"],correct:0},
+{q:"Cardiogenic shock:",a:["Heart failure","Kidney","Skin","None"],correct:0},
+{q:"Distributive shock:",a:["Vasodilation","Fluid overload","Bone","None"],correct:0},
+{q:"Obstructive shock:",a:["Blocked flow","High BP","None","Temp"],correct:0},
+{q:"Dehydration 10%:",a:["Sunken eyes","Normal","Clear","None"],correct:0},
+{q:"Severe dehydration:",a:["Shock","Normal","Hydrated","None"],correct:0},
+{q:"GDV is:",a:["Emergency","Normal","Skin issue","None"],correct:0},
+{q:"Thoracocentesis:",a:["Chest fluid removal","GI","Bone","None"],correct:0},
+{q:"Abdominocentesis:",a:["Abdominal fluid removal","Chest","Bone","None"],correct:0},
+{q:"ECG measures:",a:["Heart","Lungs","Skin","None"],correct:0},
+{q:"Emergency priority:",a:["Airway","Hair","Skin","None"],correct:0},
+{q:"Perfusion signs:",a:["MM color","Hair","Nails","None"],correct:0},
+{q:"Resp distress sign:",a:["Open-mouth breathing","Sleeping","Eating","None"],correct:0},
+{q:"Shock treatment:",a:["Fluids","Food","Rest","None"],correct:0},
+{q:"Emergency goal:",a:["Stabilize","Feed","Discharge","None"],correct:0}
 ];
 
 // ================= GAME =================
 
 let queue=[], currentQ, score=0, total=0, qNum=0, totalQ=0, confidence=null;
 
+function startCategory(type){
+if(type==="fluid") queue=[...fluid];
+if(type==="history") queue=[...history];
+if(type==="emergency") queue=[...emergency];
+startGame();
+}
+
+function startMixed(){
+queue=[...fluid,...history,...emergency];
+startGame();
+}
+
 function startGame(){
-queue=[...questions];
 shuffle(queue);
 totalQ=queue.length;
 qNum=0;
@@ -153,7 +196,6 @@ qNum++;
 
 question.innerText="Question "+qNum+" of "+totalQ+"\n\n"+currentQ.q;
 feedback.innerText="";
-
 answers.innerHTML="";
 
 let shuffled=currentQ.a.map((ans,i)=>({ans,correct:i===currentQ.correct}))
@@ -207,7 +249,7 @@ if(studyMode==="study"){
 feedback.innerText=correct?"Correct!":"Incorrect — review.";
 }
 
-scoreDiv.innerText="Score: "+score+" / "+total;
+score.innerText="Score: "+score+" / "+total;
 }
 
 function goHome(){location.reload();}

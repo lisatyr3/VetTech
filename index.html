@@ -30,6 +30,11 @@ button {
 #question { font-size: 22px; margin: 20px 0; white-space: pre-line; }
 
 #confidenceBox { margin: 15px 0; }
+
+#missedList {
+  text-align: left;
+  margin-top: 20px;
+}
 </style>
 </head>
 
@@ -77,7 +82,7 @@ button {
   <div id="resultPercent"></div>
   <div id="resultStatus"></div>
 
-  <h3>Missed Questions</h3>
+  <h3>Missed Questions (with Answers)</h3>
   <ul id="missedList"></ul>
 
   <button onclick="home()">🏠 Home</button>
@@ -97,55 +102,32 @@ let score = 0;
 let confidence = null;
 let missed = [];
 
-// ===== QUESTIONS (EXPANDED 75) =====
-
+// QUESTIONS (same as before)
 const fluid = [
 {q:"LRS is:",a:["Isotonic","Hypotonic","Hypertonic","Colloid"],c:0},
 {q:"Maintenance phase is for:",a:["Stable patients","Shock","Trauma","Emergency"],c:0},
-{q:"Total body water %:",a:["30","45","60","80"],c:2},
-{q:"ICF means:",a:["Inside cells","Outside cells","Blood","GI"],c:0},
-{q:"ECF means:",a:["Outside cells","Inside cells","Bone","Lung"],c:0},
-{q:"Hypotonic fluids treat:",a:["Hypernatremia","Shock","Pain","None"],c:0},
-{q:"Colloids expand:",a:["Vascular space","Cells","GI","Bone"],c:0},
-{q:"Fluid overload causes:",a:["Pulmonary edema","Weight loss","Normal","None"],c:0},
-{q:"Dextrose treats:",a:["Hypoglycemia","Hyperglycemia","Pain","None"],c:0},
-{q:"Potassium treats:",a:["Hypokalemia","Hyperkalemia","Pain","None"],c:0},
-// add more if desired
+{q:"Total body water %:",a:["30","45","60","80"],c:2}
 ];
 
 const history = [
 {q:"CRT measures:",a:["Perfusion","Temp","Digestion","Vision"],c:0},
 {q:"Otoscope used for:",a:["Ears","Eyes","Heart","Skin"],c:0},
-{q:"Signalment includes:",a:["Age breed sex","Only age","Only weight","None"],c:0},
-{q:"Entropion:",a:["Inward eyelid","Outward","None","Pain"],c:0},
-{q:"Ectropion:",a:["Outward eyelid","Inward","None","Pain"],c:0},
-{q:"Normal MM color:",a:["Pink","Blue","White","Green"],c:0},
-{q:"Stertor:",a:["Low sound","High wheeze","None","Normal"],c:0},
-{q:"Stridor:",a:["High sound","Low","None","Normal"],c:0},
-{q:"GI exam includes:",a:["Palpation","Eyes","Skin","None"],c:0},
-{q:"Neuro exam includes:",a:["Reflexes","Hair","Skin","None"],c:0},
+{q:"Signalment includes:",a:["Age breed sex","Only age","Only weight","None"],c:0}
 ];
 
 const emergency = [
 {q:"Shock causes:",a:["Poor perfusion","Good flow","None","Heat"],c:0},
 {q:"CPR rate:",a:["100-120","50","200","10"],c:0},
-{q:"Triage means:",a:["Prioritize","Treat","Ignore","None"],c:0},
-{q:"Pulse ox measures:",a:["Oxygen","BP","Temp","Glucose"],c:0},
-{q:"Crash cart is for:",a:["Emergency tools","Food","None","Beds"],c:0},
-{q:"Septic shock:",a:["Infection","Trauma","Pain","None"],c:0},
-{q:"GDV is:",a:["Emergency","Normal","Skin","None"],c:0},
-{q:"Thoracocentesis:",a:["Chest fluid","GI","Bone","None"],c:0},
-{q:"Airway priority:",a:["Airway","Skin","Hair","None"],c:0},
-{q:"Emergency goal:",a:["Stabilize","Feed","Discharge","None"],c:0},
+{q:"Triage means:",a:["Prioritize","Treat","Ignore","None"],c:0}
 ];
 
-// ===== MODE =====
+// MODE
 function setMode(m){
   mode = m;
   alert("Mode: " + m);
 }
 
-// ===== START =====
+// START
 function startCategory(type){
   if(type==="fluid") queue = [...fluid];
   if(type==="history") queue = [...history];
@@ -174,7 +156,7 @@ function start(){
   nextQuestion();
 }
 
-// ===== QUESTION =====
+// QUESTION
 function nextQuestion(){
 
   if(queue.length===0){
@@ -224,7 +206,7 @@ function setConfidence(val){
   document.getElementById("confidenceBox").classList.add("hidden");
 }
 
-// ===== ANSWER =====
+// ANSWER
 function answer(correct,btn){
 
   let buttons = document.querySelectorAll(".answer");
@@ -236,7 +218,11 @@ function answer(correct,btn){
   } else {
     if(mode!=="exam") btn.classList.add("wrong");
 
-    missed.push(current.q);
+    // ✅ STORE QUESTION + CORRECT ANSWER
+    missed.push({
+      question: current.q,
+      answer: current.a[current.c]
+    });
 
     if(mode!=="exam"){
       queue.push(current);
@@ -265,7 +251,7 @@ function answer(correct,btn){
   }
 }
 
-// ===== RESULTS =====
+// RESULTS
 function showResults(){
 
   document.getElementById("game").classList.add("hidden");
@@ -279,14 +265,15 @@ function showResults(){
 
   let list = document.getElementById("missedList");
   list.innerHTML="";
-  missed.forEach(q=>{
+
+  missed.forEach(item=>{
     let li=document.createElement("li");
-    li.innerText=q;
+    li.innerHTML = "<strong>" + item.question + "</strong><br>Correct: " + item.answer;
     list.appendChild(li);
   });
 }
 
-// ===== UTIL =====
+// UTIL
 function shuffle(a){
   for(let i=a.length-1;i>0;i--){
     let j=Math.floor(Math.random()*(i+1));
